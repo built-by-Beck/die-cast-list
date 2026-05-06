@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-stone-900 text-stone-100 antialiased;
+    font-size: 16px;
+  }
+
+  h1 { @apply text-3xl font-bold; }
+  h2 { @apply text-2xl font-bold; }
+  h3 { @apply text-xl font-semibold; }
+
+  /* Ensure focus rings are always visible for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-amber-500;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply max-w-5xl mx-auto px-4 py-6;
+  }
+
+  .page-title {
+    @apply text-3xl font-bold text-stone-50 mb-6;
+  }
+
+  .section-title {
+    @apply text-xl font-semibold text-stone-200 mb-3;
+  }
+
+  /* Rarity badge variants */
+  .badge-th {
+    @apply bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-sth {
+    @apply bg-yellow-400 text-stone-900 text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-premium {
+    @apply bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-mainline {
+    @apply bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-chase {
+    @apply bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-limited {
+    @apply bg-teal-600 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-redline {
+    @apply bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+
+  .badge-regular {
+    @apply bg-stone-600 text-stone-200 text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide;
+  }
+}
