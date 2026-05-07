@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { userDoc } = useAuth();
 
-  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'none';
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
 
   // Stats derived from mock data (Phase 3: replace with real Firestore queries)
   const cars = MOCK_CARS;
@@ -52,6 +52,8 @@ export default function DashboardPage() {
     ? '⭐ Premium'
     : effectivePlan === 'basic'
     ? 'Basic'
+    : effectivePlan === 'free'
+    ? 'Free'
     : 'No active plan';
 
   return (

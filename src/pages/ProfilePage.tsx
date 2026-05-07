@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { MOCK_USER_PROFILE, MOCK_USER_DOC } from '../data/mockData';
+import { useAuth } from '../contexts/AuthContext';
 import { BRANDS } from '../types';
 import Button from '../components/ui/Button';
 
@@ -21,16 +21,17 @@ function sanitizeText(text: string): string {
 }
 
 export default function ProfilePage() {
+  const { userDoc } = useAuth();
   const [form, setForm] = useState<ProfileForm>({
-    displayName: MOCK_USER_DOC.displayName,
-    bio: MOCK_USER_PROFILE.bio,
-    whyICollect: MOCK_USER_PROFILE.whyICollect,
-    yearsCollecting: MOCK_USER_PROFILE.yearsCollecting,
-    favoriteBrand: MOCK_USER_PROFILE.favoriteBrand,
-    favoriteEra: MOCK_USER_PROFILE.favoriteEra,
-    favoriteCarType: MOCK_USER_PROFILE.favoriteCarType,
-    location: MOCK_USER_PROFILE.location,
-    publicProfileEnabled: MOCK_USER_PROFILE.publicProfileEnabled,
+    displayName: userDoc?.displayName ?? '',
+    bio: '',
+    whyICollect: '',
+    yearsCollecting: '',
+    favoriteBrand: '',
+    favoriteEra: '',
+    favoriteCarType: '',
+    location: '',
+    publicProfileEnabled: false,
   });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -202,7 +203,7 @@ export default function ProfilePage() {
 
           {form.publicProfileEnabled && (
             <div className="mt-3 bg-stone-900 rounded-xl px-4 py-3 text-stone-400 text-sm">
-              Your public profile URL: <code className="text-amber-400">/p/{MOCK_USER_PROFILE.publicProfileSlug}</code>
+              Your public URL will be set when you save your profile. (Phase 5)
             </div>
           )}
         </div>

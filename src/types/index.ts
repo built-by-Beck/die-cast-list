@@ -1,7 +1,7 @@
 // ─── User & Auth ─────────────────────────────────────────────────────────────
 
 export type UserRole = 'user' | 'admin';
-export type Plan = 'none' | 'basic' | 'premium';
+export type Plan = 'none' | 'free' | 'basic' | 'premium';
 export type SubscriptionStatus =
   | 'active'
   | 'trialing'
@@ -137,6 +137,9 @@ export const DUPLICATE_STATUSES: DuplicateStatus[] = [
   'Give away',
 ];
 
+// Status for checklist-item duplicates (snake_case to match Firestore)
+export type DuplicateItemStatus = 'keep' | 'sell' | 'trade' | 'give_away' | 'unknown';
+
 export interface Car {
   id: string;
   name: string;
@@ -145,13 +148,18 @@ export interface Car {
   releaseYear: number;
   series: string;
   setName: string;
+  // Checklist linkage fields
+  toyNumber: string;
+  collectorNumber: string;
+  seriesNumber: string;
   color: string;
   scale: string;
   condition: Condition;
   packageStatus: PackageStatus;
   rarityType: RarityType;
   quantityOwned: number;
-  duplicateStatus: DuplicateStatus | null;
+  duplicateCount: number;
+  duplicateStatus: DuplicateItemStatus | null;
   storageLocation: string;
   purchasePrice: number | null;
   estimatedValue: number | null;
@@ -237,50 +245,56 @@ export interface MasterChecklist {
   year: number;
   category: ChecklistCategory;
   description: string;
+  // Checklist source data may require attribution depending on source license. Do not remove attribution fields.
+  sourceName: string;
+  sourceUrl: string;
+  sourceLicense: string;
+  sourceAttribution: string;
   totalCars: number;
+  uniqueSeries: string[];
   isPublic: boolean;
   createdBy: string;
   createdAt: unknown;
   updatedAt: unknown;
+  archivedAt: unknown | null;
 }
 
+// Required columns from the spec — these MUST be stored and displayed:
+// toyNumber, collectorNumber, modelName, seriesName, seriesNumber
 export interface MasterChecklistItem {
   id: string;
-  carName: string;
-  brand: Brand;
-  manufacturer: string;
-  releaseYear: number;
-  series: string;
-  setName: string;
-  collectorNumber: string;
-  color: string;
-  variation: string;
+  toyNumber: string;       // Toy # (e.g. "001", "TH1")
+  collectorNumber: string; // Col.# (e.g. "1/250")
+  modelName: string;       // Model Name
+  seriesName: string;      // Series (e.g. "HW Dream Garage")
+  seriesNumber: string;    // Series # (e.g. "1/10")
+  photoUrl: string | null;
+  imageRef: string | null;
+  variationLabel: string;
   rarityType: RarityType;
   notes: string;
-  imageUrl: string | null;
   sortOrder: number;
+  normalizedSearchText: string;
   createdAt: unknown;
   updatedAt: unknown;
 }
 
-export type ChecklistItemStatus =
-  | 'need'
-  | 'owned'
-  | 'duplicate'
-  | 'wanted'
-  | 'for_sale'
-  | 'for_trade'
-  | 'skipped';
+// Status is COMPUTED from quantityOwned — do not set manually
+export type ChecklistItemStatus = 'need' | 'owned' | 'duplicate';
 
 export interface ChecklistProgress {
   id: string;
   checklistId: string;
   checklistName: string;
+  brand: string;
+  year: number;
   totalCars: number;
   ownedCount: number;
   neededCount: number;
-  duplicateCount: number;
+  duplicateItemCount: number;   // items where quantityOwned > 1
+  totalDuplicateCount: number;  // sum of (quantityOwned - 1) across all items
   completedPercent: number;
+  lastOpenedAt: unknown;
   updatedAt: unknown;
 }
 
@@ -288,8 +302,18 @@ export interface ChecklistProgressItem {
   id: string;
   masterChecklistId: string;
   masterItemId: string;
+  // Denormalized for quick display — keep in sync with master item
+  toyNumber: string;
+  collectorNumber: string;
+  modelName: string;
+  seriesName: string;
+  seriesNumber: string;
+  // User tracking
   status: ChecklistItemStatus;
+  owned: boolean;
   quantityOwned: number;
+  duplicateCount: number;
+  duplicateStatus: DuplicateItemStatus;
   isFavorite: boolean;
   isWanted: boolean;
   isForSale: boolean;

@@ -9,10 +9,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/dashboard',     label: 'Home',       icon: '🏠', end: true },
+  { to: '/checklists',    label: 'Lists',      icon: '✅' },
   { to: '/inventory',     label: 'Inventory',  icon: '🚗', end: true },
   { to: '/inventory/add', label: 'Add Car',    icon: '➕', end: true, isAction: true },
-  { to: '/checklists',    label: 'Checklists', icon: '✅' },
+  { to: '/showcase',      label: 'Showcase',   icon: '⭐', end: true },
   { to: '/profile',       label: 'Profile',    icon: '👤', end: true },
 ];
 

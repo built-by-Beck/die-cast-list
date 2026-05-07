@@ -2,15 +2,19 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 
 const FEATURES = [
-  { icon: '🚗', title: 'Track Every Car', desc: 'Log each car in your collection with photos, condition, value, and notes.' },
-  { icon: '✅', title: 'Master Checklists', desc: 'Browse complete set lists and check off what you own. Never buy the same car twice.' },
-  { icon: '⭐', title: 'Showcase Your Best', desc: 'Build a public Top 10 or Top 25 showcase to share with other collectors.' },
-  { icon: '🔍', title: 'Wanted List', desc: 'Keep track of cars you\'re hunting so you\'re always ready at the store.' },
-  { icon: '🏷️', title: 'For Sale & Trade', desc: 'Mark duplicates for sale or trade. Share your available cars with the community.' },
-  { icon: '📊', title: 'Collection Stats', desc: 'See your total cars, estimated value, Treasure Hunts, and more at a glance.' },
+  { icon: '✅', title: 'Master Checklists', desc: 'Browse complete set lists and check off what you own. Free for everyone.' },
+  { icon: '🚗', title: 'Full Inventory', desc: 'Log every car with photos, condition, value, and notes. Basic & up.' },
+  { icon: '⭐', title: 'Showcase Your Best', desc: 'Build a public Top 10 or Top 25 to share with other collectors.' },
+  { icon: '🔍', title: 'Wanted List', desc: 'Track cars you\'re hunting so you\'re always ready at the store.' },
+  { icon: '🏷️', title: 'For Sale & Trade', desc: 'Mark duplicates for sale or trade and connect with the community.' },
+  { icon: '📊', title: 'Collection Stats', desc: 'See totals, estimated value, Treasure Hunts, and more at a glance.' },
 ];
 
 const BRANDS = ['Hot Wheels', 'Matchbox', 'Johnny Lightning', 'GreenLight', 'M2 Machines', 'Auto World', 'Majorette'];
+
+const FREE_FEATURES   = ['Master checklists', 'Check off what you own', 'Quantity & duplicate tracking'];
+const BASIC_FEATURES  = ['Everything in Free', 'Up to 250 cars in inventory', '1 photo per car', 'Top 10 Showcase', 'Wanted List', 'For Sale & Trade', 'Up to 3 custom checklists'];
+const PREMIUM_FEATURES = ['Everything in Basic', 'Unlimited cars', '5 photos per car', 'Top 25 Showcase', 'Unlimited custom checklists', 'CSV import/export', 'Advanced stats'];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -33,19 +37,20 @@ export default function LandingPage() {
           <span className="text-amber-500"> Perfectly Organized</span>
         </h1>
         <p className="text-xl text-stone-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Collector's Garage helps diecast collectors inventory their cars, track complete set
-          checklists, show off their best finds, and never accidentally buy the same car twice.
+          Collector's Garage helps diecast collectors track complete set checklists,
+          inventory their cars, show off their best finds, and never accidentally buy
+          the same car twice.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="xl" onClick={() => navigate('/login')}>
-            Start Your Garage — It's Free
+            Get Started Free
           </Button>
           <Button size="xl" variant="secondary" onClick={() => navigate('/login')}>
             Sign In
           </Button>
         </div>
-        <p className="text-stone-500 text-sm mt-6">
-          Simple. Friendly. Built for real collectors.
+        <p className="text-stone-500 text-sm mt-5">
+          Free checklist access · Full inventory from <strong className="text-stone-400">$5/month</strong>
         </p>
       </section>
 
@@ -76,51 +81,68 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Plans */}
-      <section className="px-6 py-16 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-stone-50 text-center mb-12">Simple pricing</h2>
-        <div className="grid sm:grid-cols-2 gap-6">
-          <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8">
-            <div className="text-2xl font-bold text-stone-50 mb-1">Basic</div>
-            <div className="text-4xl font-extrabold text-amber-500 mb-4">$5<span className="text-lg text-stone-400 font-normal">/month</span></div>
-            <ul className="space-y-3 text-stone-300">
-              {[
-                'Up to 250 cars',
-                '1 photo per car',
-                'Top 10 Showcase',
-                'Master checklists',
-                'Up to 3 custom checklists',
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2">
-                  <span className="text-green-500 font-bold">✓</span> {f}
+      {/* Pricing */}
+      <section className="px-6 py-16 max-w-5xl mx-auto">
+        <h2 className="text-3xl font-bold text-stone-50 text-center mb-3">Simple, honest pricing</h2>
+        <p className="text-stone-400 text-center mb-12">
+          Start free with checklists. Upgrade when you're ready for the full garage.
+        </p>
+
+        <div className="grid sm:grid-cols-3 gap-6">
+          {/* Free */}
+          <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 flex flex-col">
+            <div className="text-xl font-bold text-stone-50 mb-1">Free</div>
+            <div className="text-4xl font-extrabold text-stone-300 mb-1">$0</div>
+            <div className="text-stone-500 text-sm mb-6">Checklist access only</div>
+            <ul className="space-y-3 text-stone-300 flex-1">
+              {FREE_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <span className="text-green-500 font-bold mt-0.5">✓</span> {f}
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth size="lg" onClick={() => navigate('/login')}>
-              Get Started
+            <Button className="mt-8" fullWidth variant="secondary" onClick={() => navigate('/login')}>
+              Start Free
             </Button>
           </div>
-          <div className="bg-amber-500/10 border-2 border-amber-500 rounded-2xl p-8 relative">
+
+          {/* Basic */}
+          <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 flex flex-col">
+            <div className="text-xl font-bold text-stone-50 mb-1">Basic</div>
+            <div className="text-4xl font-extrabold text-amber-500 mb-1">
+              $5<span className="text-lg text-stone-400 font-normal">/mo</span>
+            </div>
+            <div className="text-stone-500 text-sm mb-6">Full inventory access</div>
+            <ul className="space-y-3 text-stone-300 flex-1">
+              {BASIC_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <span className="text-green-500 font-bold mt-0.5">✓</span> {f}
+                </li>
+              ))}
+            </ul>
+            <Button className="mt-8" fullWidth onClick={() => navigate('/login')}>
+              Get Basic
+            </Button>
+          </div>
+
+          {/* Premium */}
+          <div className="bg-amber-500/10 border-2 border-amber-500 rounded-2xl p-8 flex flex-col relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-stone-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
               Most Popular
             </div>
-            <div className="text-2xl font-bold text-stone-50 mb-1">Premium</div>
-            <div className="text-4xl font-extrabold text-amber-400 mb-4">$20<span className="text-lg text-stone-400 font-normal">/month</span></div>
-            <ul className="space-y-3 text-stone-300">
-              {[
-                'Unlimited cars',
-                '5 photos per car',
-                'Top 25 Showcase',
-                'Unlimited custom checklists',
-                'CSV import/export (coming soon)',
-                'Advanced stats (coming soon)',
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2">
-                  <span className="text-amber-400 font-bold">✓</span> {f}
+            <div className="text-xl font-bold text-stone-50 mb-1">Premium</div>
+            <div className="text-4xl font-extrabold text-amber-400 mb-1">
+              $20<span className="text-lg text-stone-400 font-normal">/mo</span>
+            </div>
+            <div className="text-stone-500 text-sm mb-6">For serious collectors</div>
+            <ul className="space-y-3 text-stone-300 flex-1">
+              {PREMIUM_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <span className="text-amber-400 font-bold mt-0.5">✓</span> {f}
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth size="lg" onClick={() => navigate('/login')}>
+            <Button className="mt-8" fullWidth onClick={() => navigate('/login')}>
               Get Premium
             </Button>
           </div>
@@ -130,9 +152,14 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="text-center px-6 py-20 border-t border-stone-800">
         <h2 className="text-3xl font-bold text-stone-50 mb-4">Ready to organize your garage?</h2>
-        <p className="text-stone-400 mb-8 text-lg">Join collectors who track their diecast collection with Collector's Garage.</p>
+        <p className="text-stone-400 mb-2 text-lg">
+          Join collectors who track their diecast collection with Collector's Garage.
+        </p>
+        <p className="text-stone-500 text-sm mb-8">
+          Start free · No credit card required for checklist access
+        </p>
         <Button size="xl" onClick={() => navigate('/login')}>
-          Start Free Today
+          Get Started
         </Button>
       </section>
 
@@ -140,7 +167,7 @@ export default function LandingPage() {
       <footer className="border-t border-stone-800 text-center py-8 text-stone-600 text-sm">
         <p>© 2025 Collector's Garage. Built for diecast collectors.</p>
         <p className="mt-1 text-xs text-stone-700">
-          Collector's Garage is not affiliated with Hot Wheels, Matchbox, or any diecast brand.
+          Not affiliated with Hot Wheels, Matchbox, or any diecast brand.
           All brand names are trademarks of their respective owners.
         </p>
       </footer>

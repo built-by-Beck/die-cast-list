@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_CARS } from '../data/mockData';
 import {
-  BRANDS, PACKAGE_STATUSES, CONDITIONS, RARITY_TYPES, DUPLICATE_STATUSES,
-  type Brand, type PackageStatus, type Condition, type RarityType, type DuplicateStatus,
+  BRANDS, PACKAGE_STATUSES, CONDITIONS, RARITY_TYPES,
+  type Brand, type PackageStatus, type Condition, type RarityType, type DuplicateItemStatus,
 } from '../types';
+import { DUPLICATE_STATUS_LABELS } from '../lib/checklistUtils';
 import Button from '../components/ui/Button';
 
 interface CarFormData {
@@ -24,7 +25,7 @@ interface CarFormData {
   storageLocation: string;
   purchasePrice: string;
   estimatedValue: string;
-  duplicateStatus: DuplicateStatus | '';
+  duplicateStatus: DuplicateItemStatus | '';
   isFavorite: boolean;
   isShowcase: boolean;
   showcaseRank: string;
@@ -323,9 +324,11 @@ export default function AddEditCarPage() {
             {Number(form.quantityOwned) > 1 && (
               <div>
                 <label htmlFor="duplicateStatus" className={labelClass}>Duplicate Status</label>
-                <select id="duplicateStatus" value={form.duplicateStatus} onChange={(e) => set('duplicateStatus', e.target.value as DuplicateStatus | '')} className={selectClass}>
+                <select id="duplicateStatus" value={form.duplicateStatus} onChange={(e) => set('duplicateStatus', e.target.value as DuplicateItemStatus | '')} className={selectClass}>
                   <option value="">— Select —</option>
-                  {DUPLICATE_STATUSES.map((d) => <option key={d} value={d}>{d}</option>)}
+                  {(Object.entries(DUPLICATE_STATUS_LABELS) as [DuplicateItemStatus, string][]).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
                 </select>
               </div>
             )}

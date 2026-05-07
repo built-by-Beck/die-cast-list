@@ -4,6 +4,9 @@ import { MOCK_CARS } from '../data/mockData';
 import type { Car, RarityType } from '../types';
 import { RarityBadge, PackageBadge, DuplicateBadge, FavoriteBadge } from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
+import UpgradeWall from '../components/ui/UpgradeWall';
+import { useAuth } from '../contexts/AuthContext';
+import { getEffectivePlan } from '../lib/access';
 
 type FilterKey =
   | 'all' | 'favorites' | 'showcase' | 'treasure-hunts' | 'super-th'
@@ -90,6 +93,8 @@ function applySort(cars: Car[], sort: SortKey): Car[] {
 
 export default function InventoryPage() {
   const navigate = useNavigate();
+  const { userDoc } = useAuth();
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [sortBy, setSortBy] = useState<SortKey>('date-added');
@@ -111,6 +116,16 @@ export default function InventoryPage() {
     }
     return applySort(cars, sortBy);
   }, [search, activeFilter, sortBy]);
+
+  if (effectivePlan === 'free' || effectivePlan === 'none') {
+    return (
+      <UpgradeWall
+        feature="Inventory"
+        requiredPlan="basic"
+        description="Log your cars with photos, condition, estimated value, and more."
+      />
+    );
+  }
 
   return (
     <div className="page-container">

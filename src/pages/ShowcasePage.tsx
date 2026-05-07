@@ -5,14 +5,25 @@ import { getEffectivePlan, getPlanLimits } from '../lib/access';
 import { MOCK_CARS } from '../data/mockData';
 import { RarityBadge } from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
+import UpgradeWall from '../components/ui/UpgradeWall';
 
 export default function ShowcasePage() {
   const navigate = useNavigate();
   const { userDoc } = useAuth();
 
-  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'none';
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
   const limits = getPlanLimits(effectivePlan);
   const maxShowcase = limits.maxShowcaseCars;
+
+  if (effectivePlan === 'free' || effectivePlan === 'none') {
+    return (
+      <UpgradeWall
+        feature="Showcase"
+        requiredPlan="basic"
+        description="Show off your Top 10 to other collectors. Upgrade to Premium for a Top 25 showcase."
+      />
+    );
+  }
 
   const showcaseCars = MOCK_CARS
     .filter((c) => c.isShowcase && !c.archivedAt)

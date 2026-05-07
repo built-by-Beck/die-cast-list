@@ -6,7 +6,8 @@ export function getEffectivePlan(userDoc: UserDoc): Plan {
   if (status === 'active' || status === 'trialing') {
     return userDoc.plan || 'basic';
   }
-  return 'none';
+  // Authenticated users with no active subscription get free-tier checklist access
+  return 'free';
 }
 
 export function getPlanLimits(effectivePlan: Plan): PlanLimits {
@@ -28,6 +29,7 @@ export function getPlanLimits(effectivePlan: Plan): PlanLimits {
     };
   }
 
+  // 'free' and 'none' — zero inventory limits; checklists remain accessible
   return {
     maxCars: 0,
     maxPhotosPerCar: 0,
@@ -40,6 +42,12 @@ export function canAccessPremium(userDoc: UserDoc): boolean {
   return getEffectivePlan(userDoc) === 'premium';
 }
 
+// Free users are in the app (checklists), just gated from paid features
 export function canAccessApp(userDoc: UserDoc): boolean {
-  return getEffectivePlan(userDoc) !== 'none';
+  const plan = getEffectivePlan(userDoc);
+  return plan !== 'none';
+}
+
+export function canAddCar(userDoc: UserDoc, currentCarCount: number): boolean {
+  return getPlanLimits(getEffectivePlan(userDoc)).maxCars > currentCarCount;
 }

@@ -3,9 +3,24 @@ import { MOCK_CARS } from '../data/mockData';
 import { RarityBadge, PackageBadge } from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
+import UpgradeWall from '../components/ui/UpgradeWall';
+import { useAuth } from '../contexts/AuthContext';
+import { getEffectivePlan } from '../lib/access';
 
 export default function ForSaleTradePage() {
   const navigate = useNavigate();
+  const { userDoc } = useAuth();
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
+
+  if (effectivePlan === 'free' || effectivePlan === 'none') {
+    return (
+      <UpgradeWall
+        feature="For Sale &amp; Trade"
+        requiredPlan="basic"
+        description="Mark duplicate cars for sale or trade and connect with the community."
+      />
+    );
+  }
 
   const forSale  = MOCK_CARS.filter((c) => c.isForSale  && !c.archivedAt);
   const forTrade = MOCK_CARS.filter((c) => c.isForTrade && !c.archivedAt);

@@ -4,6 +4,9 @@ import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Modal from '../components/ui/Modal';
 import type { WantedItem } from '../types';
+import UpgradeWall from '../components/ui/UpgradeWall';
+import { useAuth } from '../contexts/AuthContext';
+import { getEffectivePlan } from '../lib/access';
 
 const MOCK_WANTED: WantedItem[] = [
   {
@@ -41,12 +44,24 @@ const PRIORITY_COLORS: Record<WantedPriority, string> = {
 };
 
 export default function WantedListPage() {
+  const { userDoc } = useAuth();
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
   const [items, setItems] = useState<WantedItem[]>(MOCK_WANTED);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: '', brand: 'Hot Wheels' as Brand, releaseYear: '',
     series: '', maxPrice: '', priority: 'medium' as WantedPriority, notes: '',
   });
+
+  if (effectivePlan === 'free' || effectivePlan === 'none') {
+    return (
+      <UpgradeWall
+        feature="Wanted List"
+        requiredPlan="basic"
+        description="Track cars you're hunting so you never miss a find at the store."
+      />
+    );
+  }
 
   const pending = items.filter((i) => !i.found);
   const found   = items.filter((i) => i.found);

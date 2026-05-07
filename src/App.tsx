@@ -11,12 +11,12 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import PublicShowcasePage from './pages/PublicShowcasePage';
 
 // App pages
-import DashboardPage from './pages/DashboardPage';
 import InventoryPage from './pages/InventoryPage';
 import AddEditCarPage from './pages/AddEditCarPage';
 import CarDetailPage from './pages/CarDetailPage';
 import ChecklistsPage from './pages/ChecklistsPage';
 import ChecklistDetailPage from './pages/ChecklistDetailPage';
+import DuplicatesPage from './pages/DuplicatesPage';
 import ShowcasePage from './pages/ShowcasePage';
 import ProfilePage from './pages/ProfilePage';
 import WantedListPage from './pages/WantedListPage';
@@ -41,7 +41,7 @@ export default function App() {
           {/* ── Protected routes (require login) ─────────── */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<Navigate to="/checklists" replace />} />
 
               {/* Inventory */}
               <Route path="/inventory" element={<InventoryPage />} />
@@ -52,6 +52,7 @@ export default function App() {
               {/* Checklists */}
               <Route path="/checklists" element={<ChecklistsPage />} />
               <Route path="/checklists/:checklistId" element={<ChecklistDetailPage />} />
+              <Route path="/duplicates" element={<DuplicatesPage />} />
 
               {/* Other sections */}
               <Route path="/showcase" element={<ShowcasePage />} />

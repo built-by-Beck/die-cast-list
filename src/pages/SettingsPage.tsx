@@ -3,10 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { getEffectivePlan, getPlanLimits } from '../lib/access';
 import Button from '../components/ui/Button';
 
+const BASIC_LINK   = import.meta.env.VITE_STRIPE_BASIC_LINK   as string | undefined;
+const PREMIUM_LINK = import.meta.env.VITE_STRIPE_PREMIUM_LINK as string | undefined;
+
 export default function SettingsPage() {
   const { userDoc, logout } = useAuth();
 
-  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'none';
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
   const limits = getPlanLimits(effectivePlan);
 
   const [simpleChecklistMode, setSimpleChecklistMode] = useState(false);
@@ -26,6 +29,7 @@ export default function SettingsPage() {
     ? 'Lifetime Premium'
     : effectivePlan === 'premium' ? 'Premium'
     : effectivePlan === 'basic' ? 'Basic'
+    : effectivePlan === 'free' ? 'Free'
     : 'No active plan';
 
   return (
@@ -75,10 +79,41 @@ export default function SettingsPage() {
             </div>
           ))}
         </div>
-        {effectivePlan !== 'premium' && !userDoc?.lifetimeAccess && (
-          <Button className="mt-4" variant="secondary" fullWidth>
+        {(effectivePlan === 'free' || effectivePlan === 'none') && !userDoc?.lifetimeAccess && (
+          <>
+            <Button
+              className="mt-4"
+              fullWidth
+              onClick={() => BASIC_LINK && window.open(BASIC_LINK, '_blank')}
+              disabled={!BASIC_LINK}
+            >
+              Upgrade to Basic — $5/mo
+            </Button>
+            <Button
+              className="mt-2"
+              variant="secondary"
+              fullWidth
+              onClick={() => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank')}
+              disabled={!PREMIUM_LINK}
+            >
+              Go Premium — $20/mo
+            </Button>
+          </>
+        )}
+        {effectivePlan === 'basic' && !userDoc?.lifetimeAccess && (
+          <Button
+            className="mt-4"
+            fullWidth
+            onClick={() => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank')}
+            disabled={!PREMIUM_LINK}
+          >
             Upgrade to Premium — $20/mo
           </Button>
+        )}
+        {(effectivePlan === 'premium' || userDoc?.lifetimeAccess) && (
+          <p className="text-green-400 text-sm text-center mt-4">
+            You're on the highest plan. Thank you!
+          </p>
         )}
       </section>
 

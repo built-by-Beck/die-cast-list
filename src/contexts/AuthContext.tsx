@@ -4,10 +4,8 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import type { UserDoc } from '../types';
-import { MOCK_USER_DOC } from '../data/mockData';
-
-// When Firebase is not yet configured (no env vars), run in mock mode
-// so the app is fully navigable during development.
+// Require Firebase to be configured — no hardcoded accounts.
+// Set up a .env file with VITE_FIREBASE_* vars to run the app.
 const FIREBASE_CONFIGURED = Boolean(import.meta.env.VITE_FIREBASE_API_KEY);
 
 interface AuthContextType {
@@ -33,8 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!FIREBASE_CONFIGURED) {
-      // Mock mode: simulate Keith as logged in
-      setUserDoc(MOCK_USER_DOC);
+      // No Firebase configured — treat as logged out.
       setLoading(false);
       return;
     }

@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User docs ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Users may only read their own doc
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Client may create their own doc on registration with strictly safe initial values
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.role == 'user'
+        && request.resource.data.plan == 'none'
+        && request.resource.data.lifetimeAccess == false
+        && request.resource.data.stripeCustomerId == null
+        && request.resource.data.stripeSubscriptionId == null
+        && request.resource.data.subscriptionStatus == null;
+
+      // Client may update their own doc but NEVER touch billing or role fields
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && !('plan'                 in request.resource.data.diff(resource.data).affectedKeys())
+        && !('role'                 in request.resource.data.diff(resource.data).affectedKeys())
+        && !('lifetimeAccess'       in request.resource.data.diff(resource.data).affectedKeys())
+        && !('lifetimeAccessReason' in request.resource.data.diff(resource.data).affectedKeys())
+        && !('stripeCustomerId'     in request.resource.data.diff(resource.data).affectedKeys())
+        && !('stripeSubscriptionId' in request.resource.data.diff(resource.data).affectedKeys())
+        && !('subscriptionStatus'   in request.resource.data.diff(resource.data).affectedKeys());
+    }
+
+    // ── User inventory ────────────────────────────────────────────────────────
+    match /usr/{userId}/cars/{carId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /usr/{userId}/checklistProgress/{progressId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /usr/{userId}/settings/{settingId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Master checklists — public read, admin write ───────────────────────────
+    match /checklists/{checklistId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /checklists/{checklistId}/items/{itemId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── Admin logs — admin only ────────────────────────────────────────────────
+    match /adminLogs/{logId} {
+      allow read, write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}

@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ProtectedRoute() {
-  const { user, userDoc, loading, isMockMode } = useAuth();
+  const { user, loading, isMockMode } = useAuth();
 
   if (loading) {
     return (
@@ -15,8 +15,8 @@ export default function ProtectedRoute() {
     );
   }
 
-  // Mock mode: always allow access
-  if (isMockMode && userDoc) return <Outlet />;
+  // Mock mode (no Firebase env): allow access so the app is navigable during development
+  if (isMockMode) return <Outlet />;
 
   if (!user) return <Navigate to="/login" replace />;
 
