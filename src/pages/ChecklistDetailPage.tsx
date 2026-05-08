@@ -1,14 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import {
-  MOCK_CHECKLISTS,
-  MOCK_CHECKLIST_ITEMS,
-  MOCK_CHECKLIST_PROGRESS_ITEMS,
-} from '../data/mockData';
-import type { MasterChecklistItem } from '../types';
+import { collection, getDocs } from 'firebase/firestore';
+import type { ChecklistPublicIntentStatus, MasterChecklistItem, DuplicateItemStatus } from '../types';
 import { calcQuantityState, recalculateProgress } from '../lib/checklistUtils';
 import { RarityBadge } from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
+import { useAuth } from '../contexts/AuthContext';
+import { useMasterChecklistDetail } from '../hooks/useChecklistsFirestore';
+import { db } from '../lib/firebase';
+import { persistChecklistProgressState } from '../lib/checklistProgressFirestore';
+import { getEffectivePlan } from '../lib/access';
 
 type StatusFilter = 'all' | 'need' | 'owned' | 'duplicate' | 'favorites';
 type SortKey = 'sortOrder' | 'toyNumber' | 'collectorNumber' | 'modelName';
@@ -22,19 +23,90 @@ const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
   { key: 'favorites', label: '★ Faves' },
 ];
 
+const PRO_INTENT_OPTIONS: { value: ChecklistPublicIntentStatus; label: string }[] = [
+  { value: 'none', label: 'None/private' },
+  { value: 'actively_looking', label: 'Actively looking' },
+  { value: 'looking_to_buy', label: 'Looking to buy' },
+  { value: 'looking_to_trade_for', label: 'Looking to trade for' },
+  { value: 'looking_to_sell', label: 'Looking to sell' },
+  { value: 'available_for_trade', label: 'Available for trade' },
+  { value: 'available_for_sale', label: 'Available for sale' },
+  { value: 'want_duplicate', label: 'Want duplicate' },
+  { value: 'have_duplicate', label: 'Have duplicate' },
+  { value: 'sold', label: 'Sold' },
+  { value: 'traded', label: 'Traded' },
+  { value: 'not_interested', label: 'Not interested' },
+];
+
 export default function ChecklistDetailPage() {
   const { checklistId } = useParams<{ checklistId: string }>();
+  const { user, userDoc } = useAuth();
+  const { checklist, items, loading, error } = useMasterChecklistDetail(checklistId);
+  const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
+  const isPro = effectivePlan === 'premium';
 
-  const checklist   = MOCK_CHECKLISTS.find((c) => c.id === checklistId);
-  const items       = MOCK_CHECKLIST_ITEMS[checklistId ?? ''] ?? [];
-  const seedItems   = MOCK_CHECKLIST_PROGRESS_ITEMS[checklistId ?? ''] ?? [];
+  const [quantityMap, setQuantityMap] = useState<Record<string, number>>({});
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>({});
+  const [duplicateStatusMap, setDuplicateStatusMap] = useState<Record<string, DuplicateItemStatus>>({});
+  const [intentMap, setIntentMap] = useState<Record<string, ChecklistPublicIntentStatus>>({});
 
-  const [quantityMap, setQuantityMap] = useState<Record<string, number>>(() =>
-    Object.fromEntries(seedItems.map((pi) => [pi.masterItemId, pi.quantityOwned]))
-  );
-  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(seedItems.filter((pi) => pi.isFavorite).map((pi) => [pi.masterItemId, true]))
-  );
+  const hydrated = useRef(false);
+  const dirty = useRef(false);
+
+  useEffect(() => {
+    hydrated.current = false;
+    setQuantityMap({});
+    setFavoritesMap({});
+    setDuplicateStatusMap({});
+    setIntentMap({});
+  }, [checklistId, user?.uid]);
+
+  useEffect(() => {
+    if (!user || !checklistId || !checklist) return;
+
+    void getDocs(
+      collection(db, 'usr', user.uid, 'checklistProgress', checklistId, 'progressItems')
+    ).then((snap) => {
+      const qty: Record<string, number> = {};
+      const fav: Record<string, boolean> = {};
+      const dup: Record<string, DuplicateItemStatus> = {};
+      const intents: Record<string, ChecklistPublicIntentStatus> = {};
+      snap.forEach((d) => {
+        const data = d.data();
+        qty[d.id] = (data.quantityOwned as number) ?? 0;
+        fav[d.id] = Boolean(data.isFavorite);
+        dup[d.id] = (data.duplicateStatus as DuplicateItemStatus) ?? 'unknown';
+        intents[d.id] = (data.publicIntentStatus as ChecklistPublicIntentStatus) ?? 'none';
+      });
+      setQuantityMap(qty);
+      setFavoritesMap(fav);
+      setDuplicateStatusMap(dup);
+      setIntentMap(intents);
+      hydrated.current = true;
+      dirty.current = false;
+    });
+  }, [user?.uid, checklistId, checklist?.id]);
+
+  useEffect(() => {
+    if (!hydrated.current || !dirty.current || !user || !checklist || items.length === 0) return;
+    const t = setTimeout(() => {
+      void persistChecklistProgressState(
+        db,
+        user.uid,
+        checklist,
+        items,
+        quantityMap,
+        favoritesMap,
+        duplicateStatusMap,
+        intentMap,
+        isPro,
+        userDoc?.displayName || 'Collector',
+      ).then(() => {
+        dirty.current = false;
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [quantityMap, favoritesMap, duplicateStatusMap, intentMap, user?.uid, checklist, items, isPro, userDoc?.displayName]);
 
   const [seriesFilter, setSeriesFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -43,8 +115,8 @@ export default function ChecklistDetailPage() {
   const [viewMode, setViewMode]         = useState<ViewMode>('table');
 
   const uniqueSeries = useMemo(
-    () => [...new Set(items.map((i) => i.seriesName))].filter(Boolean),
-    [items]
+    () => (checklist?.uniqueSeries?.length ? checklist.uniqueSeries : [...new Set(items.map((i) => i.seriesName))].filter(Boolean)),
+    [items, checklist?.uniqueSeries]
   );
 
   const progress = useMemo(() => {
@@ -55,7 +127,7 @@ export default function ChecklistDetailPage() {
   const filteredItems = useMemo(() => {
     let result = [...items];
 
-    if (seriesFilter) {
+    if (isPro && seriesFilter) {
       result = result.filter((i) => i.seriesName === seriesFilter);
     }
 
@@ -87,21 +159,48 @@ export default function ChecklistDetailPage() {
     });
 
     return result;
-  }, [items, seriesFilter, statusFilter, search, sort, quantityMap, favoritesMap]);
+  }, [items, seriesFilter, statusFilter, search, sort, quantityMap, favoritesMap, isPro]);
 
   const handleIncrement = useCallback((itemId: string) => {
+    dirty.current = true;
     setQuantityMap((prev) => ({ ...prev, [itemId]: (prev[itemId] ?? 0) + 1 }));
   }, []);
 
   const handleDecrement = useCallback((itemId: string) => {
+    dirty.current = true;
     setQuantityMap((prev) => ({ ...prev, [itemId]: Math.max(0, (prev[itemId] ?? 0) - 1) }));
   }, []);
 
   const toggleFavorite = useCallback((itemId: string) => {
+    dirty.current = true;
     setFavoritesMap((prev) => ({ ...prev, [itemId]: !(prev[itemId] ?? false) }));
   }, []);
 
-  if (!checklist) {
+  const markOwned = useCallback((itemId: string) => {
+    dirty.current = true;
+    setQuantityMap((prev) => ({ ...prev, [itemId]: Math.max(1, prev[itemId] ?? 0) }));
+  }, []);
+
+  const markNotOwned = useCallback((itemId: string) => {
+    dirty.current = true;
+    setQuantityMap((prev) => ({ ...prev, [itemId]: 0 }));
+  }, []);
+
+  const setPublicIntent = useCallback((itemId: string, value: ChecklistPublicIntentStatus) => {
+    if (!isPro) return;
+    dirty.current = true;
+    setIntentMap((prev) => ({ ...prev, [itemId]: value }));
+  }, [isPro]);
+
+  if (loading) {
+    return (
+      <div className="page-container flex items-center justify-center py-20">
+        <p className="text-stone-400 text-lg">Loading checklist...</p>
+      </div>
+    );
+  }
+
+  if (error || !checklist) {
     return (
       <div className="page-container text-center py-20">
         <div className="text-6xl mb-4">✅</div>
@@ -182,6 +281,7 @@ export default function ChecklistDetailPage() {
             />
           </div>
           <select
+            aria-label="Sort checklist items"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
             className="bg-stone-800 border border-stone-700 text-stone-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-amber-500 cursor-pointer"
@@ -215,31 +315,37 @@ export default function ChecklistDetailPage() {
         </div>
 
         {/* Series filter */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          <button
-            onClick={() => setSeriesFilter('')}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              seriesFilter === ''
-                ? 'bg-amber-500 text-stone-900'
-                : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'
-            }`}
-          >
-            All Series
-          </button>
-          {uniqueSeries.map((s) => (
+        {isPro ? (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <button
-              key={s}
-              onClick={() => setSeriesFilter(seriesFilter === s ? '' : s)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
-                seriesFilter === s
+              onClick={() => setSeriesFilter('')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                seriesFilter === ''
                   ? 'bg-amber-500 text-stone-900'
                   : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'
               }`}
             >
-              {s}
+              All Series
             </button>
-          ))}
-        </div>
+            {uniqueSeries.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSeriesFilter(seriesFilter === s ? '' : s)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+                  seriesFilter === s
+                    ? 'bg-amber-500 text-stone-900'
+                    : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-stone-700 bg-stone-800 px-3 py-2 text-xs text-stone-400">
+            Series filtering is a Pro feature. Upgrade to Pro to filter large lists by series, track up to 25 lists, and unlock advanced buy/sell/trade tracking.
+          </div>
+        )}
 
         {/* Status filter */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -280,6 +386,11 @@ export default function ChecklistDetailPage() {
               onIncrement={handleIncrement}
               onDecrement={handleDecrement}
               onToggleFavorite={toggleFavorite}
+              isPro={isPro}
+              intentMap={intentMap}
+              onSetIntent={setPublicIntent}
+              onMarkOwned={markOwned}
+              onMarkNotOwned={markNotOwned}
             />
           </div>
 
@@ -294,6 +405,11 @@ export default function ChecklistDetailPage() {
                 onIncrement={() => handleIncrement(item.id)}
                 onDecrement={() => handleDecrement(item.id)}
                 onToggleFavorite={() => toggleFavorite(item.id)}
+                isPro={isPro}
+                publicIntentStatus={intentMap[item.id] ?? 'none'}
+                onSetIntent={(value) => setPublicIntent(item.id, value)}
+                onMarkOwned={() => markOwned(item.id)}
+                onMarkNotOwned={() => markNotOwned(item.id)}
               />
             ))}
           </div>
@@ -312,6 +428,11 @@ function ChecklistTable({
   onIncrement,
   onDecrement,
   onToggleFavorite,
+  isPro,
+  intentMap,
+  onSetIntent,
+  onMarkOwned,
+  onMarkNotOwned,
 }: {
   items: MasterChecklistItem[];
   quantityMap: Record<string, number>;
@@ -319,6 +440,11 @@ function ChecklistTable({
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  isPro: boolean;
+  intentMap: Record<string, ChecklistPublicIntentStatus>;
+  onSetIntent: (id: string, value: ChecklistPublicIntentStatus) => void;
+  onMarkOwned: (id: string) => void;
+  onMarkNotOwned: (id: string) => void;
 }) {
   return (
     <div className="bg-stone-800 border border-stone-700 rounded-2xl overflow-hidden">
@@ -334,6 +460,7 @@ function ChecklistTable({
               <th className="px-4 py-3">Series</th>
               <th className="px-4 py-3">Ser.#</th>
               <th className="px-4 py-3">Rarity</th>
+              <th className="px-4 py-3">Intent</th>
               <th className="px-4 py-3">★</th>
             </tr>
           </thead>
@@ -386,6 +513,12 @@ function ChecklistTable({
                         +
                       </button>
                     </div>
+                    {!isPro && (
+                      <div className="mt-1 flex gap-1">
+                        <button onClick={() => onMarkOwned(item.id)} className="rounded-md bg-green-700 px-2 py-0.5 text-[10px] font-semibold text-green-100">I own this</button>
+                        <button onClick={() => onMarkNotOwned(item.id)} className="rounded-md bg-stone-700 px-2 py-0.5 text-[10px] font-semibold text-stone-200">I do not own this</button>
+                      </div>
+                    )}
                   </td>
                   {/* Toy # */}
                   <td className="px-4 py-2.5">
@@ -425,6 +558,22 @@ function ChecklistTable({
                   <td className="px-4 py-2.5">
                     <RarityBadge rarity={item.rarityType} />
                   </td>
+                  <td className="px-4 py-2.5">
+                    {isPro ? (
+                      <select
+                        aria-label="Select public intent status"
+                        value={intentMap[item.id] ?? 'none'}
+                        onChange={(e) => onSetIntent(item.id, e.target.value as ChecklistPublicIntentStatus)}
+                        className="rounded-lg border border-stone-700 bg-stone-900 px-2 py-1 text-xs text-stone-200"
+                      >
+                        {PRO_INTENT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-stone-500">Pro only</span>
+                    )}
+                  </td>
                   {/* Favorite */}
                   <td className="px-4 py-2.5">
                     <button
@@ -455,6 +604,11 @@ function ChecklistItemCard({
   onIncrement,
   onDecrement,
   onToggleFavorite,
+  isPro,
+  publicIntentStatus,
+  onSetIntent,
+  onMarkOwned,
+  onMarkNotOwned,
 }: {
   item: MasterChecklistItem;
   quantity: number;
@@ -462,6 +616,11 @@ function ChecklistItemCard({
   onIncrement: () => void;
   onDecrement: () => void;
   onToggleFavorite: () => void;
+  isPro: boolean;
+  publicIntentStatus: ChecklistPublicIntentStatus;
+  onSetIntent: (value: ChecklistPublicIntentStatus) => void;
+  onMarkOwned: () => void;
+  onMarkNotOwned: () => void;
 }) {
   const { status } = calcQuantityState(quantity);
 
@@ -521,6 +680,22 @@ function ChecklistItemCard({
               </span>
             )}
           </div>
+          <div className="mt-2">
+            {isPro ? (
+              <select
+                aria-label="Select card intent status"
+                value={publicIntentStatus}
+                onChange={(e) => onSetIntent(e.target.value as ChecklistPublicIntentStatus)}
+                className="w-full rounded-lg border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs text-stone-200"
+              >
+                {PRO_INTENT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-xs text-stone-500">Public buy/sell/trade statuses are available on Pro.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -550,6 +725,12 @@ function ChecklistItemCard({
           </button>
         </div>
       </div>
+      {!isPro && (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button onClick={onMarkOwned} className="rounded-lg bg-green-700 px-2 py-2 text-xs font-semibold text-green-100">I own this</button>
+          <button onClick={onMarkNotOwned} className="rounded-lg bg-stone-700 px-2 py-2 text-xs font-semibold text-stone-200">I do not own this</button>
+        </div>
+      )}
     </div>
   );
 }

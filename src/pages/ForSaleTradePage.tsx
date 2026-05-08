@@ -1,16 +1,18 @@
 import { useNavigate } from 'react-router-dom';
-import { MOCK_CARS } from '../data/mockData';
+import type { Car } from '../types';
 import { RarityBadge, PackageBadge } from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
 import UpgradeWall from '../components/ui/UpgradeWall';
 import { useAuth } from '../contexts/AuthContext';
 import { getEffectivePlan } from '../lib/access';
+import { useInventory } from '../hooks/useInventory';
 
 export default function ForSaleTradePage() {
   const navigate = useNavigate();
-  const { userDoc } = useAuth();
+  const { userDoc, user } = useAuth();
   const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
+  const { cars, loading } = useInventory();
 
   if (effectivePlan === 'free' || effectivePlan === 'none') {
     return (
@@ -22,8 +24,17 @@ export default function ForSaleTradePage() {
     );
   }
 
-  const forSale  = MOCK_CARS.filter((c) => c.isForSale  && !c.archivedAt);
-  const forTrade = MOCK_CARS.filter((c) => c.isForTrade && !c.archivedAt);
+  const forSale  = cars.filter((c) => c.isForSale  && !c.archivedAt);
+  const forTrade = cars.filter((c) => c.isForTrade && !c.archivedAt);
+
+  if (loading || !user) {
+    return (
+      <div className="page-container">
+        <h1 className="page-title">For Sale &amp; Trade</h1>
+        <p className="text-stone-400">Loading inventory...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
@@ -85,7 +96,7 @@ function SaleTradeCard({
   type,
   onView,
 }: {
-  car: (typeof MOCK_CARS)[number];
+  car: Car;
   type: 'sale' | 'trade';
   onView: () => void;
 }) {

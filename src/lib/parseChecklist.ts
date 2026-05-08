@@ -2,65 +2,65 @@
 // Do not remove attribution fields. Store sourceName, sourceUrl,
 // sourceLicense, and sourceAttribution on every imported checklist.
 
-import type { RarityType } from '../types';
+import type { RarityType } from "../types";
 
 // ─── Wiki Markup Cleaner ──────────────────────────────────────────────────────
 
 export function cleanWikiMarkup(raw: string): string {
   let s = raw;
   // [[link|display text]] → display text
-  s = s.replace(/\[\[[^\]|]+\|([^\]]+)\]\]/g, '$1');
+  s = s.replace(/\[\[[^\]|]+\|([^\]]+)\]\]/g, "$1");
   // [[link]] → link
-  s = s.replace(/\[\[([^\]]+)\]\]/g, '$1');
+  s = s.replace(/\[\[([^\]]+)\]\]/g, "$1");
   // <font color="...">text</font> → text
-  s = s.replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, '$1');
+  s = s.replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, "$1");
   // bgcolor="..." (HTML table cell attributes)
-  s = s.replace(/bgcolor="[^"]*"/gi, '');
+  s = s.replace(/bgcolor="[^"]*"/gi, "");
   // style="..." attributes
-  s = s.replace(/\bstyle="[^"]*"/gi, '');
+  s = s.replace(/\bstyle="[^"]*"/gi, "");
   // <br> / <br /> tags
-  s = s.replace(/<br\s*\/?>/gi, ' ');
+  s = s.replace(/<br\s*\/?>/gi, " ");
   // All remaining HTML tags
-  s = s.replace(/<[^>]+>/g, '');
+  s = s.replace(/<[^>]+>/g, "");
   // Remove remaining {{ template }} calls (handled separately by extractRarity)
-  s = s.replace(/\{\{[^}]+\}\}/g, '');
+  s = s.replace(/\{\{[^}]+\}\}/g, "");
   // HTML entities
   s = s
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#\d+;/g, '');
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#\d+;/g, "");
   // Collapse whitespace
-  return s.replace(/\s+/g, ' ').trim();
+  return s.replace(/\s+/g, " ").trim();
 }
 
 // ─── Template → Rarity Extractor ─────────────────────────────────────────────
 
 export interface RarityExtractResult {
   rarityType: RarityType;
-  tags: string[];       // e.g. ["New Model", "Target"]
-  cleaned: string;      // original string with templates removed
+  tags: string[]; // e.g. ["New Model", "Target"]
+  cleaned: string; // original string with templates removed
 }
 
 export function extractRarityFromTemplates(raw: string): RarityExtractResult {
   const tags: string[] = [];
-  let rarityType: RarityType = 'Mainline';
+  let rarityType: RarityType = "Mainline";
 
   if (/\{\{STH[^}]*\}\}/.test(raw)) {
-    rarityType = 'Super Treasure Hunt';
-    tags.push('STH');
+    rarityType = "Super Treasure Hunt";
+    tags.push("STH");
   } else if (/\{\{TH[^}]*\}\}/.test(raw)) {
-    rarityType = 'Treasure Hunt';
-    tags.push('TH');
+    rarityType = "Treasure Hunt";
+    tags.push("TH");
   }
 
-  if (/\{\{NM[^}]*\}\}/.test(raw)) tags.push('New Model');
-  if (/\{\{WM[^}]*\}\}/i.test(raw)) tags.push('Walmart/Zamac');
-  if (/\{\{KR[^}]*\}\}/i.test(raw)) tags.push('Kroger');
-  if (/\{\{TG[^}]*\}\}/i.test(raw)) tags.push('Target');
+  if (/\{\{NM[^}]*\}\}/.test(raw)) tags.push("New Model");
+  if (/\{\{WM[^}]*\}\}/i.test(raw)) tags.push("Walmart/Zamac");
+  if (/\{\{KR[^}]*\}\}/i.test(raw)) tags.push("Kroger");
+  if (/\{\{TG[^}]*\}\}/i.test(raw)) tags.push("Target");
 
-  const cleaned = raw.replace(/\{\{[^}]+\}\}/g, '').trim();
+  const cleaned = raw.replace(/\{\{[^}]+\}\}/g, "").trim();
   return { rarityType, tags, cleaned };
 }
 
@@ -82,46 +82,46 @@ export interface NormalizedChecklistItem {
 }
 
 const CSV_FIELD_ALIASES: Record<string, keyof NormalizedChecklistItem> = {
-  'toy#':             'toyNumber',
-  'toy #':            'toyNumber',
-  'toynumber':        'toyNumber',
-  'toy_number':       'toyNumber',
-  'col#':             'collectorNumber',
-  'col.#':            'collectorNumber',
-  'col #':            'collectorNumber',
-  'collectornumber':  'collectorNumber',
-  'collector#':       'collectorNumber',
-  'collector_number': 'collectorNumber',
-  'modelname':        'modelName',
-  'model name':       'modelName',
-  'model_name':       'modelName',
-  'name':             'modelName',
-  'car name':         'modelName',
-  'carname':          'modelName',
-  'seriesname':       'seriesName',
-  'series name':      'seriesName',
-  'series_name':      'seriesName',
-  'series':           'seriesName',
-  'seriesnumber':     'seriesNumber',
-  'series number':    'seriesNumber',
-  'series#':          'seriesNumber',
-  'series #':         'seriesNumber',
-  'series_number':    'seriesNumber',
-  'photourl':         'photoUrl',
-  'photo':            'photoUrl',
-  'photo url':        'photoUrl',
-  'image':            'photoUrl',
-  'imageref':         'imageRef',
-  'variationlabel':   'variationLabel',
-  'variation':        'variationLabel',
-  'raritytype':       'rarityType',
-  'rarity':           'rarityType',
-  'rarity type':      'rarityType',
-  'notes':            'notes',
-  'sortorder':        'sortOrder',
-  'sort_order':       'sortOrder',
-  'sort order':       'sortOrder',
-  'order':            'sortOrder',
+  "toy#": "toyNumber",
+  "toy #": "toyNumber",
+  toynumber: "toyNumber",
+  toy_number: "toyNumber",
+  "col#": "collectorNumber",
+  "col.#": "collectorNumber",
+  "col #": "collectorNumber",
+  collectornumber: "collectorNumber",
+  "collector#": "collectorNumber",
+  collector_number: "collectorNumber",
+  modelname: "modelName",
+  "model name": "modelName",
+  model_name: "modelName",
+  name: "modelName",
+  "car name": "modelName",
+  carname: "modelName",
+  seriesname: "seriesName",
+  "series name": "seriesName",
+  series_name: "seriesName",
+  series: "seriesName",
+  seriesnumber: "seriesNumber",
+  "series number": "seriesNumber",
+  "series#": "seriesNumber",
+  "series #": "seriesNumber",
+  series_number: "seriesNumber",
+  photourl: "photoUrl",
+  photo: "photoUrl",
+  "photo url": "photoUrl",
+  image: "photoUrl",
+  imageref: "imageRef",
+  variationlabel: "variationLabel",
+  variation: "variationLabel",
+  raritytype: "rarityType",
+  rarity: "rarityType",
+  "rarity type": "rarityType",
+  notes: "notes",
+  sortorder: "sortOrder",
+  sort_order: "sortOrder",
+  "sort order": "sortOrder",
+  order: "sortOrder",
 };
 
 export function normalizeChecklistItem(
@@ -135,10 +135,10 @@ export function normalizeChecklistItem(
     if (!alias) continue;
     const val = rawVal.trim();
 
-    if (alias === 'rarityType') {
+    if (alias === "rarityType") {
       // Don't overwrite rarity if already extracted from template
       if (!mapped.rarityType) mapped.rarityType = val as RarityType;
-    } else if (alias === 'sortOrder') {
+    } else if (alias === "sortOrder") {
       mapped.sortOrder = parseInt(val, 10) || sortOrder;
     } else {
       (mapped as Record<string, unknown>)[alias] = val;
@@ -147,10 +147,13 @@ export function normalizeChecklistItem(
 
   // Extract rarity from templates inside model name or series fields
   if (mapped.modelName) {
-    const { rarityType, tags, cleaned } = extractRarityFromTemplates(mapped.modelName);
+    const { rarityType, tags, cleaned } = extractRarityFromTemplates(
+      mapped.modelName,
+    );
     mapped.modelName = cleanWikiMarkup(cleaned);
-    if (!mapped.rarityType || mapped.rarityType === 'Mainline') mapped.rarityType = rarityType;
-    if (tags.length && !mapped.notes) mapped.notes = tags.join(', ');
+    if (!mapped.rarityType || mapped.rarityType === "Mainline")
+      mapped.rarityType = rarityType;
+    if (tags.length && !mapped.notes) mapped.notes = tags.join(", ");
   }
 
   if (mapped.seriesName) {
@@ -158,18 +161,18 @@ export function normalizeChecklistItem(
   }
 
   const item: NormalizedChecklistItem = {
-    toyNumber:            mapped.toyNumber?.trim()        ?? '',
-    collectorNumber:      mapped.collectorNumber?.trim()  ?? '',
-    modelName:            mapped.modelName?.trim()        ?? '',
-    seriesName:           mapped.seriesName?.trim()       ?? '',
-    seriesNumber:         mapped.seriesNumber?.trim()     ?? '',
-    photoUrl:             mapped.photoUrl?.trim()         ?? '',
-    imageRef:             mapped.imageRef?.trim()         ?? '',
-    variationLabel:       mapped.variationLabel?.trim()   ?? '',
-    rarityType:           mapped.rarityType              ?? 'Mainline',
-    notes:                mapped.notes?.trim()            ?? '',
-    sortOrder:            mapped.sortOrder               ?? sortOrder,
-    normalizedSearchText: '',
+    toyNumber: mapped.toyNumber?.trim() ?? "",
+    collectorNumber: mapped.collectorNumber?.trim() ?? "",
+    modelName: mapped.modelName?.trim() ?? "",
+    seriesName: mapped.seriesName?.trim() ?? "",
+    seriesNumber: mapped.seriesNumber?.trim() ?? "",
+    photoUrl: mapped.photoUrl?.trim() ?? "",
+    imageRef: mapped.imageRef?.trim() ?? "",
+    variationLabel: mapped.variationLabel?.trim() ?? "",
+    rarityType: mapped.rarityType ?? "Mainline",
+    notes: mapped.notes?.trim() ?? "",
+    sortOrder: mapped.sortOrder ?? sortOrder,
+    normalizedSearchText: "",
   };
 
   item.normalizedSearchText = [
@@ -180,9 +183,9 @@ export function normalizeChecklistItem(
     item.seriesNumber,
     item.variationLabel,
   ]
-    .join(' ')
+    .join(" ")
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '');
+    .replace(/[^a-z0-9\s]/g, "");
 
   return item;
 }
@@ -191,7 +194,7 @@ export function normalizeChecklistItem(
 
 function parseCSVLine(line: string): string[] {
   const fields: string[] = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
 
   for (let i = 0; i < line.length; i++) {
@@ -203,9 +206,9 @@ function parseCSVLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (ch === ',' && !inQuotes) {
+    } else if (ch === "," && !inQuotes) {
       fields.push(current);
-      current = '';
+      current = "";
     } else {
       current += ch;
     }
@@ -222,27 +225,147 @@ export interface ParseCSVResult {
 export function parseChecklistCsv(csv: string): ParseCSVResult {
   const lines = csv.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length < 2) {
-    return { items: [], errors: [{ row: 0, message: 'CSV must have a header row and at least one data row.' }] };
+    return {
+      items: [],
+      errors: [
+        {
+          row: 0,
+          message: "CSV must have a header row and at least one data row.",
+        },
+      ],
+    };
   }
 
-  const headers = parseCSVLine(lines[0]).map((h) => h.trim().toLowerCase().replace(/['"]/g, ''));
+  const headers = parseCSVLine(lines[0]).map((h) =>
+    h.trim().toLowerCase().replace(/['"]/g, ""),
+  );
   const items: NormalizedChecklistItem[] = [];
-  const errors: ParseCSVResult['errors'] = [];
+  const errors: ParseCSVResult["errors"] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
     const raw: Record<string, string> = {};
-    headers.forEach((h, idx) => { raw[h] = values[idx]?.trim() ?? ''; });
+    headers.forEach((h, idx) => {
+      raw[h] = values[idx]?.trim() ?? "";
+    });
 
     const item = normalizeChecklistItem(raw, i);
 
     if (!item.modelName) {
-      errors.push({ row: i + 1, message: `Row ${i + 1}: modelName is required but missing.` });
+      errors.push({
+        row: i + 1,
+        message: `Row ${i + 1}: modelName is required but missing.`,
+      });
       continue;
     }
 
     items.push(item);
   }
+
+  return { items, errors };
+}
+
+function splitWikiInlineCells(line: string): string[] {
+  const trimmed = line.replace(/^(\||!)+/, "").trim();
+  return trimmed.split(/\|\||!!/).map((part) => part.trim());
+}
+
+function extractVariant(modelName: string): {
+  cleanModelName: string;
+  variantLabel: string;
+} {
+  const m = modelName.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (!m) return { cleanModelName: modelName, variantLabel: "" };
+  const variant = m[2];
+  if (/(color|zamac|edition|variant|th|sth|new model)/i.test(variant)) {
+    return { cleanModelName: m[1].trim(), variantLabel: variant.trim() };
+  }
+  return { cleanModelName: modelName, variantLabel: "" };
+}
+
+export function parseChecklistMediaWiki(source: string): ParseCSVResult {
+  const lines = source.split(/\r?\n/);
+  const items: NormalizedChecklistItem[] = [];
+  const errors: { row: number; message: string }[] = [];
+  let currentSeriesHeading = "";
+  let rowCounter = 1;
+  let pendingRowCells: string[] = [];
+
+  const flushRow = (rowLine: number) => {
+    if (pendingRowCells.length < 3) {
+      pendingRowCells = [];
+      return;
+    }
+    if (/toy\s*#|model\s*name|series\s*#/i.test(pendingRowCells.join(" "))) {
+      pendingRowCells = [];
+      return;
+    }
+
+    const rawModel = cleanWikiMarkup(pendingRowCells[2] ?? "");
+    if (!rawModel) {
+      errors.push({
+        row: rowLine,
+        message: `Row ${rowLine}: model name missing.`,
+      });
+      pendingRowCells = [];
+      return;
+    }
+
+    const rarityExtract = extractRarityFromTemplates(rawModel);
+    const variantExtract = extractVariant(rarityExtract.cleaned || rawModel);
+    const seriesName =
+      cleanWikiMarkup(pendingRowCells[3] ?? "") || currentSeriesHeading;
+    const photoRaw = pendingRowCells[5] ?? "";
+    const imageRefMatch = photoRaw.match(/File:([^|\]]+)/i);
+    const imageRef = imageRefMatch
+      ? cleanWikiMarkup(imageRefMatch[1])
+      : cleanWikiMarkup(photoRaw);
+
+    const item: NormalizedChecklistItem = normalizeChecklistItem(
+      {
+        "toy #": cleanWikiMarkup(pendingRowCells[0] ?? ""),
+        "col.#": cleanWikiMarkup(pendingRowCells[1] ?? ""),
+        "model name": variantExtract.cleanModelName,
+        series: seriesName,
+        "series #": cleanWikiMarkup(pendingRowCells[4] ?? ""),
+        photo: "",
+        imageRef,
+        variation: variantExtract.variantLabel,
+        notes: rarityExtract.tags.join(", "),
+      },
+      rowCounter++,
+    );
+    items.push(item);
+    pendingRowCells = [];
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const heading = line.match(/^==+\s*(.*?)\s*==+$/);
+    if (heading) {
+      flushRow(i + 1);
+      currentSeriesHeading = cleanWikiMarkup(heading[1]);
+      continue;
+    }
+
+    if (line.startsWith("|-")) {
+      flushRow(i + 1);
+      continue;
+    }
+
+    if (line.startsWith("|}")) {
+      flushRow(i + 1);
+      continue;
+    }
+
+    if (!(line.startsWith("|") || line.startsWith("!"))) continue;
+    const cells = splitWikiInlineCells(line);
+    if (cells.length === 0) continue;
+    pendingRowCells.push(...cells);
+  }
+  flushRow(lines.length + 1);
 
   return { items, errors };
 }

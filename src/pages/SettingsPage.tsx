@@ -26,8 +26,8 @@ export default function SettingsPage() {
   };
 
   const planLabel = userDoc?.lifetimeAccess
-    ? 'Lifetime Premium'
-    : effectivePlan === 'premium' ? 'Premium'
+    ? 'Lifetime Pro'
+    : effectivePlan === 'premium' ? 'Pro'
     : effectivePlan === 'basic' ? 'Basic'
     : effectivePlan === 'free' ? 'Free'
     : 'No active plan';
@@ -68,10 +68,11 @@ export default function SettingsPage() {
         <h2 className="section-title">Your Plan Limits</h2>
         <div className="space-y-3 text-sm">
           {[
-            { label: 'Max Cars',            value: limits.maxCars === 999_999 ? 'Unlimited' : limits.maxCars },
+            { label: 'Max Cars',            value: limits.maxCars },
             { label: 'Photos per Car',      value: limits.maxPhotosPerCar },
             { label: 'Showcase Cars',       value: `Top ${limits.maxShowcaseCars}` },
             { label: 'Custom Checklists',   value: limits.maxCustomChecklists === 999_999 ? 'Unlimited' : limits.maxCustomChecklists },
+            { label: 'Tracked Lists',       value: limits.maxTrackedLists },
           ].map((row) => (
             <div key={row.label} className="flex justify-between items-center">
               <span className="text-stone-400">{row.label}</span>
@@ -87,7 +88,7 @@ export default function SettingsPage() {
               onClick={() => BASIC_LINK && window.open(BASIC_LINK, '_blank')}
               disabled={!BASIC_LINK}
             >
-              Upgrade to Basic — $5/mo
+              Upgrade to Basic — $7/mo
             </Button>
             <Button
               className="mt-2"
@@ -96,7 +97,7 @@ export default function SettingsPage() {
               onClick={() => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank')}
               disabled={!PREMIUM_LINK}
             >
-              Go Premium — $20/mo
+              Go Pro — $22/mo
             </Button>
           </>
         )}
@@ -107,7 +108,7 @@ export default function SettingsPage() {
             onClick={() => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank')}
             disabled={!PREMIUM_LINK}
           >
-            Upgrade to Premium — $20/mo
+            Upgrade to Pro — $22/mo
           </Button>
         )}
         {(effectivePlan === 'premium' || userDoc?.lifetimeAccess) && (

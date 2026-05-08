@@ -13,8 +13,8 @@ const FEATURES = [
 const BRANDS = ['Hot Wheels', 'Matchbox', 'Johnny Lightning', 'GreenLight', 'M2 Machines', 'Auto World', 'Majorette'];
 
 const FREE_FEATURES   = ['Master checklists', 'Check off what you own', 'Quantity & duplicate tracking'];
-const BASIC_FEATURES  = ['Everything in Free', 'Up to 250 cars in inventory', '1 photo per car', 'Top 10 Showcase', 'Wanted List', 'For Sale & Trade', 'Up to 3 custom checklists'];
-const PREMIUM_FEATURES = ['Everything in Basic', 'Unlimited cars', '5 photos per car', 'Top 25 Showcase', 'Unlimited custom checklists', 'CSV import/export', 'Advanced stats'];
+const BASIC_FEATURES  = ['Everything in Free', 'Track 1 list', 'Up to 10 cars in inventory', '1 photo per car', 'Simple owned/not-owned tracking'];
+const PREMIUM_FEATURES = ['Everything in Basic', 'Track up to 25 lists', 'Up to 5,000 cars in inventory', '1 photo per car', 'Series filtering', 'Advanced buy/sell/trade tracking'];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-stone-900 text-stone-100">
       {/* Header */}
       <header className="border-b border-stone-800 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
-        <div className="text-2xl font-bold text-amber-500">🔧 Collector's Garage</div>
+        <div className="text-2xl font-bold text-amber-500">🔧 Die Cast Vault</div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
           Sign In
         </Button>
@@ -37,7 +37,7 @@ export default function LandingPage() {
           <span className="text-amber-500"> Perfectly Organized</span>
         </h1>
         <p className="text-xl text-stone-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Collector's Garage helps diecast collectors track complete set checklists,
+          Die Cast Vault helps diecast collectors track complete set checklists,
           inventory their cars, show off their best finds, and never accidentally buy
           the same car twice.
         </p>
@@ -50,7 +50,7 @@ export default function LandingPage() {
           </Button>
         </div>
         <p className="text-stone-500 text-sm mt-5">
-          Free checklist access · Full inventory from <strong className="text-stone-400">$5/month</strong>
+          Free checklist access · Full inventory from <strong className="text-stone-400">$7/month</strong>
         </p>
       </section>
 
@@ -85,7 +85,7 @@ export default function LandingPage() {
       <section className="px-6 py-16 max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold text-stone-50 text-center mb-3">Simple, honest pricing</h2>
         <p className="text-stone-400 text-center mb-12">
-          Start free with checklists. Upgrade when you're ready for the full garage.
+          Start free with checklists. Upgrade when you're ready for the full vault.
         </p>
 
         <div className="grid sm:grid-cols-3 gap-6">
@@ -110,7 +110,7 @@ export default function LandingPage() {
           <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 flex flex-col">
             <div className="text-xl font-bold text-stone-50 mb-1">Basic</div>
             <div className="text-4xl font-extrabold text-amber-500 mb-1">
-              $5<span className="text-lg text-stone-400 font-normal">/mo</span>
+              $7<span className="text-lg text-stone-400 font-normal">/mo</span>
             </div>
             <div className="text-stone-500 text-sm mb-6">Full inventory access</div>
             <ul className="space-y-3 text-stone-300 flex-1">
@@ -130,9 +130,9 @@ export default function LandingPage() {
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-stone-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
               Most Popular
             </div>
-            <div className="text-xl font-bold text-stone-50 mb-1">Premium</div>
+            <div className="text-xl font-bold text-stone-50 mb-1">Pro</div>
             <div className="text-4xl font-extrabold text-amber-400 mb-1">
-              $20<span className="text-lg text-stone-400 font-normal">/mo</span>
+              $22<span className="text-lg text-stone-400 font-normal">/mo</span>
             </div>
             <div className="text-stone-500 text-sm mb-6">For serious collectors</div>
             <ul className="space-y-3 text-stone-300 flex-1">
@@ -143,7 +143,7 @@ export default function LandingPage() {
               ))}
             </ul>
             <Button className="mt-8" fullWidth onClick={() => navigate('/login')}>
-              Get Premium
+              Get Pro
             </Button>
           </div>
         </div>
@@ -151,9 +151,9 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="text-center px-6 py-20 border-t border-stone-800">
-        <h2 className="text-3xl font-bold text-stone-50 mb-4">Ready to organize your garage?</h2>
+        <h2 className="text-3xl font-bold text-stone-50 mb-4">Ready to organize your collection?</h2>
         <p className="text-stone-400 mb-2 text-lg">
-          Join collectors who track their diecast collection with Collector's Garage.
+          Join collectors who track their diecast collection with Die Cast Vault.
         </p>
         <p className="text-stone-500 text-sm mb-8">
           Start free · No credit card required for checklist access
@@ -165,7 +165,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-stone-800 text-center py-8 text-stone-600 text-sm">
-        <p>© 2025 Collector's Garage. Built for diecast collectors.</p>
+        <p>© 2026 Die Cast Vault. Built for diecast collectors.</p>
         <p className="mt-1 text-xs text-stone-700">
           Not affiliated with Hot Wheels, Matchbox, or any diecast brand.
           All brand names are trademarks of their respective owners.

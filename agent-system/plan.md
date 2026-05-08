@@ -1,4 +1,4 @@
-# Active PBRD Plan — Collectors Garage
+# Active PBRD Plan — Die Cast Vault
 
 Use this file for LARGE tasks or when a durable plan handoff is needed.
 SMALL tasks use a short mini-plan in the agent response. MEDIUM tasks may use a short plan here or inline.

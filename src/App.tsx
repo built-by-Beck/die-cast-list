@@ -16,12 +16,16 @@ import AddEditCarPage from './pages/AddEditCarPage';
 import CarDetailPage from './pages/CarDetailPage';
 import ChecklistsPage from './pages/ChecklistsPage';
 import ChecklistDetailPage from './pages/ChecklistDetailPage';
+import ChooseListsPage from './pages/ChooseListsPage';
+import TrackedListsPage from './pages/TrackedListsPage';
+import DashboardPage from './pages/DashboardPage';
 import DuplicatesPage from './pages/DuplicatesPage';
 import ShowcasePage from './pages/ShowcasePage';
 import ProfilePage from './pages/ProfilePage';
 import WantedListPage from './pages/WantedListPage';
 import ForSaleTradePage from './pages/ForSaleTradePage';
 import SettingsPage from './pages/SettingsPage';
+import MarketplaceSearchPage from './pages/MarketplaceSearchPage';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -41,7 +45,7 @@ export default function App() {
           {/* ── Protected routes (require login) ─────────── */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Navigate to="/checklists" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
 
               {/* Inventory */}
               <Route path="/inventory" element={<InventoryPage />} />
@@ -52,6 +56,8 @@ export default function App() {
               {/* Checklists */}
               <Route path="/checklists" element={<ChecklistsPage />} />
               <Route path="/checklists/:checklistId" element={<ChecklistDetailPage />} />
+              <Route path="/choose-lists" element={<ChooseListsPage />} />
+              <Route path="/my-tracked-lists" element={<TrackedListsPage />} />
               <Route path="/duplicates" element={<DuplicatesPage />} />
 
               {/* Other sections */}
@@ -59,6 +65,7 @@ export default function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/wanted" element={<WantedListPage />} />
               <Route path="/for-sale-trade" element={<ForSaleTradePage />} />
+              <Route path="/marketplace-search" element={<MarketplaceSearchPage />} />
               <Route path="/settings" element={<SettingsPage />} />
 
               {/* ── Admin routes (require admin role) ──── */}

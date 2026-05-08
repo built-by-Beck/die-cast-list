@@ -1,0 +1,29 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "progressItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "quantityOwned", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "marketplaceIntents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "intentType", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "marketplaceIntents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "brandId", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

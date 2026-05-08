@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_CARS } from '../data/mockData';
 import type { Car, RarityType } from '../types';
 import { RarityBadge, PackageBadge, DuplicateBadge, FavoriteBadge } from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import UpgradeWall from '../components/ui/UpgradeWall';
 import { useAuth } from '../contexts/AuthContext';
 import { getEffectivePlan } from '../lib/access';
+import { useInventory } from '../hooks/useInventory';
 
 type FilterKey =
   | 'all' | 'favorites' | 'showcase' | 'treasure-hunts' | 'super-th'
@@ -95,12 +95,13 @@ export default function InventoryPage() {
   const navigate = useNavigate();
   const { userDoc } = useAuth();
   const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
+  const { cars: allCars, loading, error } = useInventory();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [sortBy, setSortBy] = useState<SortKey>('date-added');
 
   const filtered = useMemo(() => {
-    let cars = MOCK_CARS.filter((c) => !c.archivedAt); // exclude archived
+    let cars = allCars;
     cars = applyFilter(cars, activeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -124,6 +125,25 @@ export default function InventoryPage() {
         requiredPlan="basic"
         description="Log your cars with photos, condition, estimated value, and more."
       />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="page-container flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🚗</div>
+          <p className="text-stone-400 text-lg">Loading your vault...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container py-10 text-center">
+        <p className="text-red-400 text-base">{error}</p>
+      </div>
     );
   }
 
@@ -201,7 +221,7 @@ export default function InventoryPage() {
       {filtered.length === 0 && (
         <EmptyState
           icon="🚗"
-          title={search ? 'No cars match your search' : 'Your garage is empty'}
+          title={search ? 'No cars match your search' : 'Your vault is empty'}
           description={
             search
               ? 'Try a different search term or clear the search.'

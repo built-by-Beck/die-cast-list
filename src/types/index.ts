@@ -1,13 +1,13 @@
 // ─── User & Auth ─────────────────────────────────────────────────────────────
 
-export type UserRole = 'user' | 'admin';
-export type Plan = 'none' | 'free' | 'basic' | 'premium';
+export type UserRole = "user" | "admin";
+export type Plan = "none" | "free" | "basic" | "premium";
 export type SubscriptionStatus =
-  | 'active'
-  | 'trialing'
-  | 'canceled'
-  | 'past_due'
-  | 'unpaid'
+  | "active"
+  | "trialing"
+  | "canceled"
+  | "past_due"
+  | "unpaid"
   | null;
 
 export interface UserDoc {
@@ -49,96 +49,101 @@ export interface UserSettings {
 // ─── Car / Inventory ─────────────────────────────────────────────────────────
 
 export type Brand =
-  | 'Hot Wheels'
-  | 'Matchbox'
-  | 'Johnny Lightning'
-  | 'GreenLight'
-  | 'M2 Machines'
-  | 'Auto World'
-  | 'Majorette'
-  | 'Other';
+  | "Hot Wheels"
+  | "Matchbox"
+  | "Johnny Lightning"
+  | "GreenLight"
+  | "M2 Machines"
+  | "Auto World"
+  | "Majorette"
+  | "Other";
 
 export const BRANDS: Brand[] = [
-  'Hot Wheels',
-  'Matchbox',
-  'Johnny Lightning',
-  'GreenLight',
-  'M2 Machines',
-  'Auto World',
-  'Majorette',
-  'Other',
+  "Hot Wheels",
+  "Matchbox",
+  "Johnny Lightning",
+  "GreenLight",
+  "M2 Machines",
+  "Auto World",
+  "Majorette",
+  "Other",
 ];
 
 export type PackageStatus =
-  | 'Carded'
-  | 'Loose'
-  | 'Opened but saved package'
-  | 'Damaged package'
-  | 'Unknown';
+  | "Carded"
+  | "Loose"
+  | "Opened but saved package"
+  | "Damaged package"
+  | "Unknown";
 
 export const PACKAGE_STATUSES: PackageStatus[] = [
-  'Carded',
-  'Loose',
-  'Opened but saved package',
-  'Damaged package',
-  'Unknown',
+  "Carded",
+  "Loose",
+  "Opened but saved package",
+  "Damaged package",
+  "Unknown",
 ];
 
 export type Condition =
-  | 'Mint carded'
-  | 'Carded with wear'
-  | 'Loose mint'
-  | 'Loose used'
-  | 'Damaged'
-  | 'Restored/custom'
-  | 'Unknown';
+  | "Mint carded"
+  | "Carded with wear"
+  | "Loose mint"
+  | "Loose used"
+  | "Damaged"
+  | "Restored/custom"
+  | "Unknown";
 
 export const CONDITIONS: Condition[] = [
-  'Mint carded',
-  'Carded with wear',
-  'Loose mint',
-  'Loose used',
-  'Damaged',
-  'Restored/custom',
-  'Unknown',
+  "Mint carded",
+  "Carded with wear",
+  "Loose mint",
+  "Loose used",
+  "Damaged",
+  "Restored/custom",
+  "Unknown",
 ];
 
 export type RarityType =
-  | 'Regular'
-  | 'Mainline'
-  | 'Premium'
-  | 'Treasure Hunt'
-  | 'Super Treasure Hunt'
-  | 'Redline'
-  | 'Chase'
-  | 'Limited Edition'
-  | 'Custom'
-  | 'Unknown';
+  | "Regular"
+  | "Mainline"
+  | "Premium"
+  | "Treasure Hunt"
+  | "Super Treasure Hunt"
+  | "Redline"
+  | "Chase"
+  | "Limited Edition"
+  | "Custom"
+  | "Unknown";
 
 export const RARITY_TYPES: RarityType[] = [
-  'Regular',
-  'Mainline',
-  'Premium',
-  'Treasure Hunt',
-  'Super Treasure Hunt',
-  'Redline',
-  'Chase',
-  'Limited Edition',
-  'Custom',
-  'Unknown',
+  "Regular",
+  "Mainline",
+  "Premium",
+  "Treasure Hunt",
+  "Super Treasure Hunt",
+  "Redline",
+  "Chase",
+  "Limited Edition",
+  "Custom",
+  "Unknown",
 ];
 
-export type DuplicateStatus = 'Keep' | 'Sell' | 'Trade' | 'Give away';
+export type DuplicateStatus = "Keep" | "Sell" | "Trade" | "Give away";
 
 export const DUPLICATE_STATUSES: DuplicateStatus[] = [
-  'Keep',
-  'Sell',
-  'Trade',
-  'Give away',
+  "Keep",
+  "Sell",
+  "Trade",
+  "Give away",
 ];
 
 // Status for checklist-item duplicates (snake_case to match Firestore)
-export type DuplicateItemStatus = 'keep' | 'sell' | 'trade' | 'give_away' | 'unknown';
+export type DuplicateItemStatus =
+  | "keep"
+  | "sell"
+  | "trade"
+  | "give_away"
+  | "unknown";
 
 export interface Car {
   id: string;
@@ -191,7 +196,7 @@ export interface CarPhoto {
 
 // ─── Wanted List ─────────────────────────────────────────────────────────────
 
-export type WantedPriority = 'low' | 'medium' | 'high';
+export type WantedPriority = "low" | "medium" | "high";
 
 export interface WantedItem {
   id: string;
@@ -210,36 +215,38 @@ export interface WantedItem {
 // ─── Checklists ──────────────────────────────────────────────────────────────
 
 export type ChecklistCategory =
-  | 'Mainline'
-  | 'Premium'
-  | 'Treasure Hunt'
-  | 'Super Treasure Hunt'
-  | 'Car Culture'
-  | 'Team Transport'
-  | 'Boulevard'
-  | 'Redline'
-  | 'Matchbox'
-  | 'Chase Cars'
-  | 'Custom List'
-  | 'Other';
+  | "Mainline"
+  | "Premium"
+  | "Treasure Hunt"
+  | "Super Treasure Hunt"
+  | "Car Culture"
+  | "Team Transport"
+  | "Boulevard"
+  | "Redline"
+  | "Matchbox"
+  | "Chase Cars"
+  | "Custom List"
+  | "Other";
 
 export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
-  'Mainline',
-  'Premium',
-  'Treasure Hunt',
-  'Super Treasure Hunt',
-  'Car Culture',
-  'Team Transport',
-  'Boulevard',
-  'Redline',
-  'Matchbox',
-  'Chase Cars',
-  'Custom List',
-  'Other',
+  "Mainline",
+  "Premium",
+  "Treasure Hunt",
+  "Super Treasure Hunt",
+  "Car Culture",
+  "Team Transport",
+  "Boulevard",
+  "Redline",
+  "Matchbox",
+  "Chase Cars",
+  "Custom List",
+  "Other",
 ];
 
 export interface MasterChecklist {
   id: string;
+  brandId?: string;
+  brandName?: string;
   name: string;
   brand: Brand;
   year: number;
@@ -263,11 +270,13 @@ export interface MasterChecklist {
 // toyNumber, collectorNumber, modelName, seriesName, seriesNumber
 export interface MasterChecklistItem {
   id: string;
-  toyNumber: string;       // Toy # (e.g. "001", "TH1")
+  brandId?: string;
+  year?: number;
+  toyNumber: string; // Toy # (e.g. "001", "TH1")
   collectorNumber: string; // Col.# (e.g. "1/250")
-  modelName: string;       // Model Name
-  seriesName: string;      // Series (e.g. "HW Dream Garage")
-  seriesNumber: string;    // Series # (e.g. "1/10")
+  modelName: string; // Model Name
+  seriesName: string; // Series (e.g. "HW Dream Garage")
+  seriesNumber: string; // Series # (e.g. "1/10")
   photoUrl: string | null;
   imageRef: string | null;
   variationLabel: string;
@@ -280,10 +289,11 @@ export interface MasterChecklistItem {
 }
 
 // Status is COMPUTED from quantityOwned — do not set manually
-export type ChecklistItemStatus = 'need' | 'owned' | 'duplicate';
+export type ChecklistItemStatus = "need" | "owned" | "duplicate";
 
 export interface ChecklistProgress {
   id: string;
+  brandId?: string;
   checklistId: string;
   checklistName: string;
   brand: string;
@@ -291,8 +301,8 @@ export interface ChecklistProgress {
   totalCars: number;
   ownedCount: number;
   neededCount: number;
-  duplicateItemCount: number;   // items where quantityOwned > 1
-  totalDuplicateCount: number;  // sum of (quantityOwned - 1) across all items
+  duplicateItemCount: number; // items where quantityOwned > 1
+  totalDuplicateCount: number; // sum of (quantityOwned - 1) across all items
   completedPercent: number;
   lastOpenedAt: unknown;
   updatedAt: unknown;
@@ -310,6 +320,8 @@ export interface ChecklistProgressItem {
   seriesNumber: string;
   // User tracking
   status: ChecklistItemStatus;
+  privateOwnershipStatus?: "owned" | "not_owned";
+  publicIntentStatus?: ChecklistPublicIntentStatus;
   owned: boolean;
   quantityOwned: number;
   duplicateCount: number;
@@ -320,6 +332,68 @@ export interface ChecklistProgressItem {
   isForTrade: boolean;
   userNotes: string;
   linkedInventoryCarId: string | null;
+  publicSearchEnabled?: boolean;
+  updatedAt: unknown;
+}
+
+export type ChecklistPublicIntentStatus =
+  | "none"
+  | "actively_looking"
+  | "looking_to_buy"
+  | "looking_to_trade_for"
+  | "looking_to_sell"
+  | "available_for_trade"
+  | "available_for_sale"
+  | "want_duplicate"
+  | "have_duplicate"
+  | "sold"
+  | "traded"
+  | "not_interested";
+
+export interface UserTrackedList {
+  id: string;
+  userId: string;
+  listId: string;
+  brandId: string;
+  brandName: string;
+  listTitle: string;
+  year: number;
+  category: string;
+  listType: string;
+  itemCount: number;
+  pinned: boolean;
+  activatedAt: unknown;
+  updatedAt: unknown;
+}
+
+export type MarketplaceIntentType =
+  | "looking_to_buy"
+  | "looking_to_trade_for"
+  | "available_for_sale"
+  | "available_for_trade";
+
+export interface MarketplaceIntent {
+  id: string;
+  intentId: string;
+  userId: string;
+  memberDisplayName: string;
+  brandId: string;
+  year: number;
+  listId: string;
+  listTitle: string;
+  itemId: string;
+  modelName: string;
+  toyNumber: string;
+  collectionNumber: string;
+  seriesName: string;
+  intentType: MarketplaceIntentType;
+  quantity: number;
+  condition: string | null;
+  askingPrice: number | null;
+  tradeNotesPublic: string;
+  locationPublicText: string | null;
+  isActive: boolean;
+  createdAt: unknown;
   updatedAt: unknown;
 }
 
@@ -330,6 +404,7 @@ export interface PlanLimits {
   maxPhotosPerCar: number;
   maxShowcaseCars: number;
   maxCustomChecklists: number;
+  maxTrackedLists: number;
 }
 
 // ─── Admin ───────────────────────────────────────────────────────────────────

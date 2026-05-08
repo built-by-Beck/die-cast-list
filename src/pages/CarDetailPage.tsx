@@ -1,17 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { MOCK_CARS } from '../data/mockData';
 import { RarityBadge, PackageBadge } from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { ConfirmModal } from '../components/ui/Modal';
+import { useAuth } from '../contexts/AuthContext';
+import { fetchCarById, useInventory } from '../hooks/useInventory';
+import type { Car } from '../types';
 
 export default function CarDetailPage() {
   const { carId } = useParams<{ carId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { archiveCar } = useInventory();
+
+  const [car, setCar] = useState<Car | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showArchive, setShowArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
-  const car = MOCK_CARS.find((c) => c.id === carId);
+  useEffect(() => {
+    if (!carId) return;
+
+    if (!user) return;
+
+    fetchCarById(user.uid, carId)
+      .then((found) => {
+        setCar(found);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [carId, user?.uid]);
+
+  const handleArchive = async () => {
+    if (!carId) return;
+    setArchiving(true);
+    try {
+      await archiveCar(carId);
+      navigate('/inventory');
+    } catch {
+      setArchiving(false);
+      setShowArchive(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="page-container flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🚗</div>
+          <p className="text-stone-400 text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!car) {
     return (
@@ -23,14 +64,6 @@ export default function CarDetailPage() {
       </div>
     );
   }
-
-  const handleArchive = async () => {
-    setArchiving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setArchiving(false);
-    setShowArchive(false);
-    navigate('/inventory');
-  };
 
   return (
     <div className="page-container max-w-2xl">

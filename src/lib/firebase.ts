@@ -4,8 +4,7 @@ import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 // Firebase is only initialized when env vars are present.
-// When running without a .env file, the app uses mock data instead.
-// All Firebase usages are guarded by FIREBASE_CONFIGURED in AuthContext.
+// Without credentials, auth stays logged out and signed-in features are unavailable.
 const CONFIGURED = Boolean(import.meta.env.VITE_FIREBASE_API_KEY);
 
 // eslint-disable-next-line prefer-const

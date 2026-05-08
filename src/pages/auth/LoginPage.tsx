@@ -140,14 +140,13 @@ export default function LoginPage() {
       <div className="min-h-screen bg-stone-900 flex items-center justify-center px-4">
         <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 w-full max-w-sm text-center">
           <div className="text-5xl mb-4">🔧</div>
-          <h1 className="text-2xl font-bold text-stone-50 mb-2">Collector's Garage</h1>
+          <h1 className="text-2xl font-bold text-stone-50 mb-2">Die Cast Vault</h1>
           <p className="text-stone-400 text-sm mb-6 leading-relaxed">
-            Running in development mode — checklists and layout are available.
-            <br />
-            Add a <code className="font-mono text-amber-400">.env</code> file to enable authentication.
+            Firebase is not configured. Add your <code className="font-mono text-amber-400">VITE_FIREBASE_*</code>{' '}
+            variables to a <code className="font-mono text-amber-400">.env</code> file so you can sign in and load your real collection.
           </p>
-          <Button size="lg" fullWidth onClick={() => navigate('/dashboard')}>
-            Browse as Guest
+          <Button size="lg" fullWidth variant="secondary" onClick={() => navigate('/')}>
+            Back to home
           </Button>
         </div>
       </div>
@@ -179,10 +178,10 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <div className="text-5xl mb-3">🔧</div>
-            <div className="text-2xl font-bold text-amber-500">Collector's Garage</div>
+            <div className="text-2xl font-bold text-amber-500">Die Cast Vault</div>
           </Link>
           <p className="text-stone-400 mt-2">
-            {mode === 'signin' ? 'Welcome back, collector!' : 'Start your garage today.'}
+            {mode === 'signin' ? 'Welcome back, collector!' : 'Start your vault today.'}
           </p>
         </div>
 
@@ -287,7 +286,7 @@ export default function LoginPage() {
                 ? 'Send Reset Email'
                 : mode === 'signin'
                 ? 'Sign In'
-                : 'Create My Garage'}
+                : 'Create My Vault'}
             </Button>
 
             {showReset && (

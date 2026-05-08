@@ -1,4 +1,4 @@
-# Lessons Learned — Collectors Garage
+# Lessons Learned — Die Cast Vault
 
 Use this file for avoidable mistakes, repeated issues, bad assumptions, or process failures.
 The goal is to prevent the same mistake from happening twice.
@@ -39,3 +39,16 @@ These are architectural guardrails for this project — treat them as lessons al
 **Stripe state must never be mutated by the client** — when Stripe is added, `plan`, `stripeCustomerId`, `subscriptionStatus`, and `lifetimeAccess` on `UserDoc` are set only by backend webhooks via Cloud Functions. Client reads these values but never writes them.
 
 **`lifetimeAccess` overrides subscription status** — always call `getEffectivePlan(userDoc)` from `src/lib/access.ts` rather than checking `userDoc.plan` directly. `lifetimeAccess: true` resolves to premium regardless of subscription state.
+
+## 2026-05-07 - Mock removal must wire Firestore + rules
+
+**What happened:** Stripping `mockData.ts` and mock branches left pages that still expected in-memory data unless real Firestore listeners and security rules (including `wanted`, nested `progressItems`, and `collectionGroup`) were implemented.
+
+**Impact:** Incomplete removal would compile but show empty screens or runtime permission/index errors.
+
+**Root cause:** Mock data masked missing persistence paths.
+
+**Fix used:** Load checklists from `checklists/` + items; persist progress under `usr/{uid}/checklistProgress/{checklistId}` and subcollection `progressItems`; wanted list under `usr/{uid}/wanted`; deploy `firestore.indexes.json` for collection-group duplicate query.
+
+**Prevention rule:** When removing demo data, map every former mock consumer to a real collection path (or intentional empty UI) before deleting the fixture file.
+

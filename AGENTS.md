@@ -1,4 +1,4 @@
-# Repository AI Instructions — Collectors Garage
+# Repository AI Instructions — Die Cast Vault
 
 **Diecast car collection tracker for Hot Wheels, Matchbox, and similar brand collectors.**
 

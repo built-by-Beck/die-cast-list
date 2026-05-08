@@ -13,7 +13,6 @@ interface AuthContextType {
   userDoc: UserDoc | null;
   loading: boolean;
   logout: () => Promise<void>;
-  isMockMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,7 +20,6 @@ const AuthContext = createContext<AuthContextType>({
   userDoc: null,
   loading: true,
   logout: async () => {},
-  isMockMode: false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -79,7 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userDoc,
         loading,
         logout,
-        isMockMode: !FIREBASE_CONFIGURED,
       }}
     >
       {children}

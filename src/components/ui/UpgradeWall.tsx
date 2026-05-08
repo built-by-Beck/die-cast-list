@@ -18,7 +18,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
       <div className="text-6xl mb-5">🔒</div>
 
       <h2 className="text-2xl font-bold text-stone-100 mb-2">
-        {feature} requires {requiredPlan === 'premium' ? 'Premium' : 'Basic'}
+        {feature} requires {requiredPlan === 'premium' ? 'Pro' : 'Basic'}
       </h2>
 
       {description && (
@@ -39,14 +39,14 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
               onClick={openBasic}
               className="flex-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-40 text-stone-900 font-bold px-5 py-3 rounded-xl transition-colors"
             >
-              Upgrade to Basic — $5/mo
+              Upgrade to Basic — $7/mo
             </button>
             <button
               disabled={!hasStripe}
               onClick={openPremium}
               className="flex-1 bg-stone-700 hover:bg-stone-600 active:bg-stone-800 disabled:opacity-40 text-stone-200 font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
             >
-              Go Premium — $20/mo
+              Go Pro — $22/mo
             </button>
           </>
         ) : (
@@ -55,7 +55,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
             onClick={openPremium}
             className="flex-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-40 text-stone-900 font-bold px-5 py-3 rounded-xl transition-colors"
           >
-            Upgrade to Premium — $20/mo
+            Upgrade to Pro — $22/mo
           </button>
         )}
       </div>
@@ -64,7 +64,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
         After payment your account will be activated within 24 hours.
         <br />
         Already paid?{' '}
-        <a href="mailto:support@collectorsgarage.app" className="text-amber-500 hover:underline">
+        <a href="mailto:support@diecastvault.app" className="text-amber-500 hover:underline">
           Contact support
         </a>
         .

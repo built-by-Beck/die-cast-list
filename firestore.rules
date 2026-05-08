@@ -34,7 +34,46 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    match /usr/{userId}/checklistProgress/{progressId} {
+    match /usr/{userId}/photos/{photoId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Progress item subdocuments — queried via collectionGroup for duplicates view
+    match /{path=**}/progressItems/{itemId} {
+      allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /usr/{userId}/checklistProgress/{checklistId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /progressItems/{itemId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update, delete: if request.auth != null
+          && request.auth.uid == userId
+          && (
+            !('publicIntentStatus' in request.resource.data)
+            || request.resource.data.publicIntentStatus == 'none'
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.lifetimeAccess == true
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.plan == 'premium'
+          );
+      }
+    }
+
+    match /usr/{userId}/trackedLists/{listId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /marketplaceIntents/{intentId} {
+      allow read: if resource.data.isActive == true;
+      allow create, update, delete: if request.auth != null
+        && request.auth.uid == request.resource.data.userId
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.lifetimeAccess == true
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.plan == 'premium'
+        );
+    }
+
+    match /usr/{userId}/wanted/{wantedId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 

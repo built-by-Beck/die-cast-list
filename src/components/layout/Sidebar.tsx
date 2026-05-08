@@ -9,15 +9,18 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/checklists',      label: 'Checklists',      icon: '✅' },
+  { to: '/dashboard',       label: 'Dashboard',       icon: '📊', end: true },
+  { to: '/choose-lists',    label: 'Choose Lists',    icon: '✅', end: true },
+  { to: '/my-tracked-lists',label: 'My Tracked Lists',icon: '📚', end: true },
   { to: '/inventory',       label: 'Inventory',       icon: '🚗', end: true },
+  { to: '/marketplace-search', label: 'Marketplace Search', icon: '🔎', end: true },
+  { to: '/settings',        label: 'Upgrade / Billing', icon: '💳', end: true },
   { to: '/inventory/add',   label: 'Add Car',         icon: '➕', end: true },
   { to: '/duplicates',      label: 'Duplicates',      icon: '📋', end: true },
   { to: '/showcase',        label: 'Showcase',        icon: '⭐', end: true },
   { to: '/wanted',          label: 'Wanted List',     icon: '🔍', end: true },
   { to: '/for-sale-trade',  label: 'For Sale / Trade', icon: '🏷️', end: true },
   { to: '/profile',         label: 'Profile',         icon: '👤', end: true },
-  { to: '/settings',        label: 'Settings',        icon: '⚙️', end: true },
 ];
 
 export default function Sidebar() {
@@ -33,9 +36,9 @@ export default function Sidebar() {
     <aside className="w-64 bg-stone-800 border-r border-stone-700 flex flex-col h-screen sticky top-0">
       {/* Logo / Branding */}
       <div className="p-6 border-b border-stone-700">
-        <NavLink to="/checklists" className="block">
+        <NavLink to="/dashboard" className="block">
           <div className="text-2xl font-bold text-amber-500 leading-tight">
-            🔧 Collector's Garage
+            🔧 Die Cast Vault
           </div>
         </NavLink>
         {userDoc && (

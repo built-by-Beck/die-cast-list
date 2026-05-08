@@ -1,41 +1,12 @@
 import { useState } from 'react';
-import { BRANDS, type Brand, type WantedPriority } from '../types';
+import { BRANDS, type Brand, type WantedPriority, type WantedItem } from '../types';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Modal from '../components/ui/Modal';
-import type { WantedItem } from '../types';
 import UpgradeWall from '../components/ui/UpgradeWall';
 import { useAuth } from '../contexts/AuthContext';
 import { getEffectivePlan } from '../lib/access';
-
-const MOCK_WANTED: WantedItem[] = [
-  {
-    id: 'w1',
-    name: "'70 Chevelle SS Super Treasure Hunt",
-    brand: 'Hot Wheels',
-    releaseYear: 2025,
-    series: 'Super Treasure Hunts',
-    maxPrice: 25.00,
-    priority: 'high',
-    notes: 'Looking for the red one specifically.',
-    found: false,
-    createdAt: new Date('2025-01-10'),
-    updatedAt: new Date('2025-01-10'),
-  },
-  {
-    id: 'w2',
-    name: 'Porsche 356 Speedster',
-    brand: 'Hot Wheels',
-    releaseYear: 2024,
-    series: 'Car Culture',
-    maxPrice: 10.00,
-    priority: 'medium',
-    notes: '',
-    found: false,
-    createdAt: new Date('2025-02-01'),
-    updatedAt: new Date('2025-02-01'),
-  },
-];
+import { useWantedList } from '../hooks/useWantedList';
 
 const PRIORITY_COLORS: Record<WantedPriority, string> = {
   high:   'bg-red-700 text-white',
@@ -44,9 +15,9 @@ const PRIORITY_COLORS: Record<WantedPriority, string> = {
 };
 
 export default function WantedListPage() {
-  const { userDoc } = useAuth();
+  const { userDoc, user } = useAuth();
   const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
-  const [items, setItems] = useState<WantedItem[]>(MOCK_WANTED);
+  const { items, loading, addWanted, markFound } = useWantedList(user?.uid);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: '', brand: 'Hot Wheels' as Brand, releaseYear: '',
@@ -63,30 +34,51 @@ export default function WantedListPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="page-container">
+        <h1 className="page-title mb-0">Wanted List</h1>
+        <p className="text-stone-400 mt-4">Loading...</p>
+      </div>
+    );
+  }
+
   const pending = items.filter((i) => !i.found);
   const found   = items.filter((i) => i.found);
 
-  const markFound = (id: string) =>
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, found: true, updatedAt: new Date() } : i));
+  const markFoundCb = async (id: string) => {
+    try {
+      await markFound(id);
+    } catch {
+      /* ignore */
+    }
+  };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newItem: WantedItem = {
-      id: `w${Date.now()}`,
-      name: form.name,
-      brand: form.brand,
-      releaseYear: form.releaseYear ? Number(form.releaseYear) : null,
-      series: form.series,
-      maxPrice: form.maxPrice ? Number(form.maxPrice) : null,
-      priority: form.priority,
-      notes: form.notes,
-      found: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setItems((prev) => [newItem, ...prev]);
-    setShowForm(false);
-    setForm({ name: '', brand: 'Hot Wheels', releaseYear: '', series: '', maxPrice: '', priority: 'medium', notes: '' });
+    try {
+      await addWanted({
+        name: form.name,
+        brand: form.brand,
+        releaseYear: form.releaseYear ? Number(form.releaseYear) : null,
+        series: form.series,
+        maxPrice: form.maxPrice ? Number(form.maxPrice) : null,
+        priority: form.priority,
+        notes: form.notes,
+      });
+      setShowForm(false);
+      setForm({
+        name: '',
+        brand: 'Hot Wheels',
+        releaseYear: '',
+        series: '',
+        maxPrice: '',
+        priority: 'medium',
+        notes: '',
+      });
+    } catch {
+      /* ignore */
+    }
   };
 
   const inputClass = 'w-full bg-stone-900 border border-stone-600 text-stone-100 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-amber-500 placeholder-stone-600';
@@ -118,7 +110,7 @@ export default function WantedListPage() {
               <h2 className="section-title">Still Looking ({pending.length})</h2>
               <div className="space-y-3">
                 {pending.map((item) => (
-                  <WantedCard key={item.id} item={item} onFound={() => markFound(item.id)} />
+                  <WantedCard key={item.id} item={item} onFound={() => void markFoundCb(item.id)} />
                 ))}
               </div>
             </section>

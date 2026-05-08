@@ -1,13 +1,22 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  MOCK_CHECKLISTS,
-  MOCK_CHECKLIST_ITEMS,
-  MOCK_CHECKLIST_PROGRESS_ITEMS,
-} from '../data/mockData';
+  collectionGroup,
+  query,
+  where,
+  onSnapshot,
+  type Unsubscribe,
+} from 'firebase/firestore';
 import type { DuplicateItemStatus } from '../types';
 import { DUPLICATE_STATUS_LABELS } from '../lib/checklistUtils';
 import EmptyState from '../components/ui/EmptyState';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import {
+  fetchChecklistWithItems,
+  persistSingleProgressItem,
+  syncProgressSummaryFromFirestore,
+} from '../lib/checklistProgressFirestore';
 
 interface DuplicateRow {
   checklistId: string;
@@ -21,32 +30,7 @@ interface DuplicateRow {
   seriesNumber: string;
   quantityOwned: number;
   duplicateStatus: DuplicateItemStatus;
-}
-
-function buildInitialRows(): DuplicateRow[] {
-  const rows: DuplicateRow[] = [];
-  for (const [clId, progressItems] of Object.entries(MOCK_CHECKLIST_PROGRESS_ITEMS)) {
-    const checklist  = MOCK_CHECKLISTS.find((c) => c.id === clId);
-    const masterItems = MOCK_CHECKLIST_ITEMS[clId] ?? [];
-    for (const pi of progressItems) {
-      if (pi.quantityOwned <= 1) continue;
-      const mi = masterItems.find((m) => m.id === pi.masterItemId);
-      rows.push({
-        checklistId:    clId,
-        checklistName:  checklist?.name ?? 'Unknown Checklist',
-        progressItemId: pi.id,
-        masterItemId:   pi.masterItemId,
-        toyNumber:      mi?.toyNumber      ?? pi.toyNumber,
-        collectorNumber: mi?.collectorNumber ?? pi.collectorNumber,
-        modelName:      mi?.modelName      ?? pi.modelName,
-        seriesName:     mi?.seriesName     ?? pi.seriesName,
-        seriesNumber:   mi?.seriesNumber   ?? pi.seriesNumber,
-        quantityOwned:  pi.quantityOwned,
-        duplicateStatus: pi.duplicateStatus,
-      });
-    }
-  }
-  return rows;
+  isFavorite: boolean;
 }
 
 const STATUS_COLORS: Record<DuplicateItemStatus, string> = {
@@ -57,9 +41,49 @@ const STATUS_COLORS: Record<DuplicateItemStatus, string> = {
   unknown:   'bg-stone-700 text-stone-500',
 };
 
+const FB = Boolean(import.meta.env.VITE_FIREBASE_API_KEY);
+
 export default function DuplicatesPage() {
   const navigate = useNavigate();
-  const [duplicates, setDuplicates] = useState<DuplicateRow[]>(buildInitialRows);
+  const { user } = useAuth();
+  const [duplicates, setDuplicates] = useState<DuplicateRow[]>([]);
+
+  useEffect(() => {
+    if (!FB || !user) {
+      setDuplicates([]);
+      return;
+    }
+
+    let unsub: Unsubscribe | undefined;
+    const q = query(
+      collectionGroup(db, 'progressItems'),
+      where('ownerUid', '==', user.uid),
+      where('quantityOwned', '>', 1)
+    );
+
+    unsub = onSnapshot(q, (snap) => {
+      const rows: DuplicateRow[] = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          checklistId: data.checklistId as string,
+          checklistName: (data.checklistName as string) ?? 'Checklist',
+          progressItemId: d.id,
+          masterItemId: (data.masterItemId as string) ?? d.id,
+          toyNumber: (data.toyNumber as string) ?? '',
+          collectorNumber: (data.collectorNumber as string) ?? '',
+          modelName: (data.modelName as string) ?? '',
+          seriesName: (data.seriesName as string) ?? '',
+          seriesNumber: (data.seriesNumber as string) ?? '',
+          quantityOwned: (data.quantityOwned as number) ?? 0,
+          duplicateStatus: (data.duplicateStatus as DuplicateItemStatus) ?? 'unknown',
+          isFavorite: Boolean(data.isFavorite),
+        };
+      });
+      setDuplicates(rows);
+    });
+
+    return () => unsub?.();
+  }, [user?.uid]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, { checklistName: string; rows: DuplicateRow[] }> = {};
@@ -74,25 +98,51 @@ export default function DuplicatesPage() {
 
   const totalExtras = duplicates.reduce((s, d) => s + (d.quantityOwned - 1), 0);
 
-  const handleDecrement = (progressItemId: string) => {
-    setDuplicates((prev) =>
-      prev
-        .map((d) =>
-          d.progressItemId === progressItemId
-            ? { ...d, quantityOwned: d.quantityOwned - 1 }
-            : d
-        )
-        .filter((d) => d.quantityOwned > 1)
+  const handleDecrement = async (dup: DuplicateRow) => {
+    if (!user) return;
+    const bundle = await fetchChecklistWithItems(db, dup.checklistId);
+    if (!bundle) return;
+    const masterItem = bundle.items.find((i) => i.id === dup.masterItemId);
+    if (!masterItem) return;
+    const newQty = dup.quantityOwned - 1;
+    await persistSingleProgressItem(
+      db,
+      user.uid,
+      bundle.checklist,
+      masterItem,
+      newQty,
+      dup.duplicateStatus,
+      dup.isFavorite,
     );
+    await syncProgressSummaryFromFirestore(db, user.uid, bundle.checklist, bundle.items);
   };
 
-  const handleStatusChange = (progressItemId: string, status: DuplicateItemStatus) => {
-    setDuplicates((prev) =>
-      prev.map((d) =>
-        d.progressItemId === progressItemId ? { ...d, duplicateStatus: status } : d
-      )
+  const handleStatusChange = async (dup: DuplicateRow, status: DuplicateItemStatus) => {
+    if (!user) return;
+    const bundle = await fetchChecklistWithItems(db, dup.checklistId);
+    if (!bundle) return;
+    const masterItem = bundle.items.find((i) => i.id === dup.masterItemId);
+    if (!masterItem) return;
+    await persistSingleProgressItem(
+      db,
+      user.uid,
+      bundle.checklist,
+      masterItem,
+      dup.quantityOwned,
+      status,
+      dup.isFavorite,
     );
+    await syncProgressSummaryFromFirestore(db, user.uid, bundle.checklist, bundle.items);
   };
+
+  if (!FB || !user) {
+    return (
+      <div className="page-container">
+        <h1 className="page-title">Duplicates</h1>
+        <p className="text-stone-400">Sign in with Firebase configured to track duplicates.</p>
+      </div>
+    );
+  }
 
   if (duplicates.length === 0) {
     return (
@@ -101,7 +151,7 @@ export default function DuplicatesPage() {
         <EmptyState
           icon="📋"
           title="No duplicates yet!"
-          description="When you own more than one of the same car, extras show up here. You can mark them for sale, trade, or give away."
+          description="When you own more than one of the same car on a checklist, extras show up here. You can mark them for sale, trade, or give away."
           actionLabel="Go to Checklists"
           onAction={() => navigate('/checklists')}
         />
@@ -111,7 +161,6 @@ export default function DuplicatesPage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h1 className="page-title mb-0">Duplicates</h1>
         <div className="text-right">
@@ -137,10 +186,10 @@ export default function DuplicatesPage() {
           <div className="space-y-3">
             {group.rows.map((dup) => (
               <DuplicateCard
-                key={dup.progressItemId}
+                key={`${dup.checklistId}-${dup.masterItemId}`}
                 dup={dup}
-                onDecrement={() => handleDecrement(dup.progressItemId)}
-                onStatusChange={(s) => handleStatusChange(dup.progressItemId, s)}
+                onDecrement={() => void handleDecrement(dup)}
+                onStatusChange={(s) => void handleStatusChange(dup, s)}
               />
             ))}
           </div>
@@ -186,11 +235,11 @@ function DuplicateCard({
         </div>
       </div>
 
-      {/* Status buttons + Minus */}
       <div className="flex gap-2 flex-wrap">
         {(['keep', 'sell', 'trade', 'give_away'] as DuplicateItemStatus[]).map((s) => (
           <button
             key={s}
+            type="button"
             onClick={() => onStatusChange(s)}
             className={`flex-1 min-w-[60px] py-2 rounded-xl text-xs font-bold transition-all ${
               dup.duplicateStatus === s
@@ -202,6 +251,7 @@ function DuplicateCard({
           </button>
         ))}
         <button
+          type="button"
           onClick={onDecrement}
           className="px-3 py-2 rounded-xl text-xs font-bold bg-stone-700 hover:bg-red-900/50 text-stone-400 hover:text-red-400 transition-all"
           title="Remove one duplicate"

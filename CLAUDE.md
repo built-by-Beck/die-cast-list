@@ -1,4 +1,4 @@
-# Claude — Collectors Garage
+# Claude — Die Cast Vault
 
 **Diecast car collection tracker for collectors of Hot Wheels, Matchbox, and similar brands.**
 Collectors track their inventory, log checklists, manage duplicates, build a wanted list, and share a public showcase page.
@@ -21,7 +21,7 @@ Built by **built_by_Beck**. All commits must include `built_by_Beck` in the comm
 
 ## Architecture (This Project Is User-Centric, Not Org-Centric)
 
-Collectors Garage is a **single-user SaaS** — each user owns their own data. The data model lives under `usr/{uid}/...` subcollections, NOT `org/{orgId}/...`.
+Die Cast Vault is a **single-user SaaS** — each user owns their own data. The data model lives under `usr/{uid}/...` subcollections, NOT `org/{orgId}/...`.
 
 This differs from the workspace default. Do not apply org-based multi-tenant patterns here.
 
@@ -51,7 +51,7 @@ Key rules:
 - `src/contexts/AuthContext.tsx` — auth state and user document listener
 - `src/lib/checklistUtils.ts` — checklist logic
 - `src/lib/parseChecklist.ts` — checklist parsing utilities
-- `src/data/mockData.ts` — mock/seed data
+- `src/lib/checklistProgressFirestore.ts` — persist checklist qty/favorites under `usr/{uid}/checklistProgress/...`
 
 ## PBRD Workflow
 

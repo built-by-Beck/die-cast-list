@@ -1,10 +1,10 @@
-# Agent Memory — Collectors Garage
+# Agent Memory — Die Cast Vault
 
 Shared running notebook and handoff channel for all PBRD agents.
 
 ## Project Snapshot
 
-**Project:** Collectors Garage
+**Project:** Die Cast Vault
 **Description:** Diecast car collection tracker for Hot Wheels, Matchbox, and similar brand collectors. Users track inventory, manage checklists, log duplicates, build a wanted list, and share a public showcase.
 **Tech Stack:** React 18 + TypeScript + Vite + Tailwind CSS + React Router v6 · Firebase Auth + Firestore + Storage (client-side) · Stripe pending · Firebase Hosting
 **Data Model:** User-centric — `usr/{uid}/...` subcollections (NOT org-based)
@@ -56,7 +56,7 @@ Shared running notebook and handoff channel for all PBRD agents.
 ## 2026-05-06 - PBRD Setup
 
 **Task:**
-Install PBRD system into Collectors Garage project.
+Install PBRD system into Die Cast Vault project.
 
 **Summary:**
 Created CLAUDE.md, AGENTS.md, and agent-system/ files. Project surveyed — React + TypeScript + Vite + Tailwind, Firebase client-side only (no Cloud Functions yet), Stripe pending. User-centric data model (usr/{uid}/...), not org-centric. Plans: none/basic/premium with lifetimeAccess. Plan logic centralized in src/lib/access.ts.
@@ -267,3 +267,139 @@ ACCEPTED
 
 **Next Recommended Action:**
 Phase 3: Firestore persistence for checklist progress (quantity tracking persisted per user).
+
+---
+
+## 2026-05-07 - Rebrand to Die Cast Vault
+
+**Classification:** MEDIUM (docs + UI + package metadata, no auth/data model changes)
+**PBRD followed:** YES — explicit user request; scope defined before edits.
+
+**Task:**
+Rename the product from Collectors Garage / Collector's Garage to Die Cast Vault everywhere it appeared in-repo.
+
+**Summary:**
+- Updated `index.html` document title, landing/login/sidebar copy, inventory/loading strings, add-car success and CTA labels, protected-route loading text.
+- Replaced product-scoped "garage" phrasing with vault/collection wording where it referred to the app metaphor (not Hot Wheels series names like HW Dream Garage).
+- `package.json` / `package-lock.json` `name` → `die-cast-vault`; support mailto → `support@diecastvault.app`.
+- `CLAUDE.md`, `AGENTS.md`, and agent-system headers/project snapshot aligned to Die Cast Vault.
+
+**Files Changed:**
+- index.html, package.json, package-lock.json, CLAUDE.md, AGENTS.md
+- agent-system/agent-info.md, agent-system/plan.md, agent-system/lessons_learned.md
+- src/pages/LandingPage.tsx, src/pages/auth/LoginPage.tsx, src/components/layout/Sidebar.tsx
+- src/components/ui/UpgradeWall.tsx, src/routes/ProtectedRoute.tsx, src/pages/InventoryPage.tsx, src/pages/AddEditCarPage.tsx
+
+**Validation:**
+- `npm run build` (tsc && vite build) — passed
+
+**Review Verdict:**
+ACCEPTED
+
+**Risks / Blockers:**
+- Workspace folder path remains `Collectors_Garage` (OneDrive/git rename is manual if desired).
+- `support@diecastvault.app` must match real DNS/mailbox when you go live.
+
+**Next Recommended Action:**
+Rename local repo folder / Firebase display name if desired; wire real support inbox and legal footer domain.
+
+**Handoff Notes:**
+Brand string grep clean for old product names; HW series data unchanged.
+
+---
+
+## 2026-05-07 - Remove mock data; Firestore-backed app
+
+**Classification:** LARGE
+**Task:** Remove fake/mock data; use real Firebase or empty states.
+
+**Summary:** Deleted `src/data/mockData.ts` and unrouted `DashboardPage.tsx`. Wired checklists, checklist progress (`usr/.../checklistProgress` + `progressItems`), wanted (`usr/.../wanted`), duplicates (`collectionGroup`), admin CSV → `checklists/.../items`. Removed mock mode / guest login. Added `firestore.indexes.json` and expanded `firestore.rules`.
+
+**Files:** New hooks/helpers `useChecklistsFirestore`, `useWantedList`, `checklistProgressFirestore`, `firestoreConverters`; many page updates.
+
+**Validation:** `npm run build` passed
+
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS — deploy Firestore rules + indexes before production.
+
+**Next:** `firebase deploy --only firestore` and smoke-test signed-in flows.
+
+---
+
+## 2026-05-07 - Phase 1 membership/list-tracking implementation
+
+**Classification:** LARGE
+**Task:** Execute approved Phase 1 PBRD plan for pricing, tracked lists, checklist status model separation, Pro-only series filtering, routing/nav updates, and validation.
+
+**Summary:** Updated plan limits (`Basic` now 10 cars, 1 photo, 1 tracked list; `Pro` now 5000 cars, 1 photo, 25 tracked lists) and pricing copy (`$7/$22`). Added `Choose Lists`, `My Tracked Lists`, `My Vault Dashboard`, and `Marketplace Search` shell page with Pro gate messaging. Extended checklist progress writes to persist separate `privateOwnershipStatus` and `publicIntentStatus`; Basic writes are forced to `publicIntentStatus: 'none'`. Added Pro-only series filtering lock message and Pro intent selectors in checklist detail plus Basic “I own this / I do not own this” controls. Added `usr/{uid}/trackedLists` Firestore rules and Pro-only guard for non-`none` public intent writes.
+
+**Files:** `src/lib/access.ts`, `src/types/index.ts`, `src/hooks/useChecklistsFirestore.ts`, `src/lib/checklistProgressFirestore.ts`, `src/pages/ChecklistDetailPage.tsx`, `src/pages/ChecklistsPage.tsx`, `src/pages/LandingPage.tsx`, `src/pages/SettingsPage.tsx`, `src/components/ui/UpgradeWall.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/layout/BottomNav.tsx`, `src/App.tsx`, `src/pages/ChooseListsPage.tsx`, `src/pages/TrackedListsPage.tsx`, `src/pages/DashboardPage.tsx`, `src/pages/MarketplaceSearchPage.tsx`, `src/pages/ShowcasePage.tsx`, `firestore.rules`.
+
+**Validation:** `npm run build` passed. `ReadLints` reports only existing-style warnings about inline style usage.
+
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS
+
+**Risks / Blockers:**
+- Existing repo has many unrelated in-flight changes, so this pass was scoped to additive-safe edits only.
+- Firestore intent write guard currently keys off `users/{uid}.plan == 'premium' || lifetimeAccess`; if subscription-status nuances are needed at rules level, add Cloud Functions-backed claims/rule predicates.
+
+**Next:** Implement Phase 2 inventory/photo-limit integration and replace marketplace shell with full query/filter/result flows.
+
+---
+
+## 2026-05-07 - Remaining 5-phase rollout execution
+
+**Classification:** LARGE
+**Task:** Implement the approved remaining 5-phase Die Cast Vault rollout continuously with per-phase validation gates.
+
+**Summary:**
+- Added centralized `PLAN_LIMITS` config in `src/lib/access.ts` and aligned limit lookups to that source.
+- Expanded dashboard delivery with tracked-list progress cards, recently-updated inventory, and quick actions (`Choose Lists`, `Open My Vault`, `Marketplace Search`, `Upgrade to Pro`).
+- Hardened inventory/privacy defaults by setting new-car `publicVisible` to `false` and updated photo-limit copy to current 1-photo policy.
+- Implemented marketplace intent data layer by syncing Pro intent statuses into top-level `marketplaceIntents` docs from checklist progress writes; Basic users remain forced to `publicIntentStatus: 'none'`.
+- Built functional Pro marketplace search UI with filters/results over active `marketplaceIntents`; Basic still sees upgrade wall.
+- Added/extended Firestore policies for `usr/{uid}/photos` and `marketplaceIntents`, plus index entries for marketplace queries.
+- Upgraded admin importer with MediaWiki source parsing support, deterministic item IDs for safer re-import upserts, and brand-ready checklist/item metadata (`brandId`, `brandName`, year tagging).
+- Added `storage.rules` and wired `firebase.json` storage rules config.
+
+**Validation:**
+- `npm run build` passed after changes.
+- `ReadLints` cleaned introduced accessibility errors; remaining diagnostics are non-blocking inline-style warnings in existing UI patterns.
+
+**Review Verdict:**
+ACCEPTED WITH MINOR CONCERNS
+
+**Risks / Blockers:**
+- No dedicated `format`, `lint`, or standalone `typecheck` npm scripts currently exist; validation used `npm run build` and IDE lint diagnostics.
+- Marketplace search currently filters in client after loading active intents; may need query-scope optimization/index tuning as data grows.
+- MediaWiki parser is intentionally pragmatic/minimal and should be expanded with richer table/section edge-case coverage in a follow-up hardening pass.
+
+**Next:**
+- Add explicit npm scripts for `format`, `lint`, and `typecheck` to match PBRD gate commands.
+- Add targeted automated tests for parser and marketplace intent mapping.
+
+---
+
+## 2026-05-07 - Follow-up fixes: package scripts, marketplace search, parser
+
+**Classification:** MEDIUM
+**Task:** Apply requested follow-up fixes for package scripts, marketplace search depth, and parser robustness.
+
+**Summary:**
+- Added package scripts in `package.json`: `typecheck`, `lint`, `format`, `format:check`, and installed `prettier`.
+- Expanded `MarketplaceSearchPage` with richer filters (brand/year/list/series/intent/search) and list/year context in results while keeping public-safe fields only.
+- Extended marketplace intent payload fields (`year`, `listTitle`) for stronger filtering from `checklistProgressFirestore`.
+- Improved MediaWiki parsing in `parseChecklist.ts` by accumulating multi-line table rows and flushing on row boundaries (`|-` / `|}`), which better supports common wiki table layouts.
+- Ran Prettier checks on newly touched files, plus `npm run typecheck` and `npm run build`.
+
+**Validation:**
+- `npm run typecheck` passed
+- `npm run build` passed
+- `npx prettier --check` passed for touched files
+- `ReadLints` shows one non-blocking existing inline-style warning in `DashboardPage.tsx`
+
+**Review Verdict:**
+ACCEPTED WITH MINOR CONCERNS
+
+**Risks / Blockers:**
+- Repo-wide `npm run format:check` still flags many pre-existing files outside this targeted fix scope.
+

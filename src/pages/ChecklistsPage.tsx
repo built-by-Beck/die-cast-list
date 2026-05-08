@@ -1,38 +1,38 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_CHECKLISTS, MOCK_CHECKLIST_PROGRESS } from '../data/mockData';
+import { usePublicMasterChecklists, useUserChecklistSummaries } from '../hooks/useChecklistsFirestore';
+import { useAuth } from '../contexts/AuthContext';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
 import type { MasterChecklist, ChecklistProgress } from '../types';
 
 export default function ChecklistsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { checklists: publishedChecklists, loading: listsLoading } = usePublicMasterChecklists();
+  const { byChecklistId: progressById } = useUserChecklistSummaries(user?.uid);
+
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [search, setSearch] = useState('');
 
-  const progressById = useMemo(
-    () => Object.fromEntries(MOCK_CHECKLIST_PROGRESS.map((p) => [p.checklistId, p])),
-    []
-  );
-
-  const totalStats = useMemo(() => ({
-    active: MOCK_CHECKLIST_PROGRESS.length,
-    have:   MOCK_CHECKLIST_PROGRESS.reduce((s, p) => s + p.ownedCount, 0),
-    need:   MOCK_CHECKLIST_PROGRESS.reduce((s, p) => s + p.neededCount, 0),
-    dupes:  MOCK_CHECKLIST_PROGRESS.reduce((s, p) => s + p.duplicateItemCount, 0),
-  }), []);
+  const totalStats = useMemo(() => {
+    const summaries = Object.values(progressById);
+    return {
+      active: summaries.filter((s) => s.ownedCount > 0).length,
+      have: summaries.reduce((s, p) => s + p.ownedCount, 0),
+      need: summaries.reduce((s, p) => s + p.neededCount, 0),
+      dupes: summaries.reduce((s, p) => s + p.duplicateItemCount, 0),
+    };
+  }, [progressById]);
 
   const allYears = useMemo(
     () =>
-      [...new Set(MOCK_CHECKLISTS.filter((cl) => cl.isPublic).map((cl) => cl.year))].sort(
-        (a, b) => b - a
-      ),
-    []
+      [...new Set(publishedChecklists.map((cl) => cl.year))].sort((a, b) => b - a),
+    [publishedChecklists]
   );
 
   const filtered = useMemo(() => {
-    return MOCK_CHECKLISTS.filter((cl) => {
-      if (!cl.isPublic) return false;
+    return publishedChecklists.filter((cl) => {
       if (selectedYear && cl.year !== selectedYear) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -44,7 +44,7 @@ export default function ChecklistsPage() {
       }
       return true;
     }).sort((a, b) => b.year - a.year || a.name.localeCompare(b.name));
-  }, [selectedYear, search]);
+  }, [publishedChecklists, selectedYear, search]);
 
   const groups = useMemo(() => {
     if (selectedYear) {
@@ -65,11 +65,26 @@ export default function ChecklistsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h1 className="page-title mb-0">Checklists</h1>
-        <Button variant="secondary" onClick={() => navigate('/checklists/new')}>
-          ➕ Custom List
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => navigate('/choose-lists')}>
+            Choose Lists
+          </Button>
+          <Button variant="secondary" onClick={() => navigate('/my-tracked-lists')}>
+            My Tracked Lists
+          </Button>
+        </div>
       </div>
 
+      {listsLoading ? (
+        <p className="text-stone-400 mb-8">Loading checklists...</p>
+      ) : publishedChecklists.length === 0 ? (
+        <EmptyState
+          icon="✅"
+          title="No checklists published yet"
+          description="Publish master checklists from Admin (CSV import) and they will appear here."
+        />
+      ) : (
+        <>
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
@@ -156,6 +171,8 @@ export default function ChecklistsPage() {
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   );
