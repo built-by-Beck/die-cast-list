@@ -18,7 +18,7 @@ function inferListType(category: string): string {
 export default function ChooseListsPage() {
   const navigate = useNavigate();
   const { user, userDoc } = useAuth();
-  const { checklists, loading } = usePublicMasterChecklists();
+  const { checklists, loading, usingDraftFallback } = usePublicMasterChecklists();
   const { trackedLists } = useTrackedLists(user?.uid);
 
   const effectivePlan = userDoc ? getEffectivePlan(userDoc) : 'free';
@@ -75,6 +75,11 @@ export default function ChooseListsPage() {
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-amber-700 bg-amber-900/30 px-4 py-3 text-sm text-amber-200">{error}</div>}
+      {usingDraftFallback && (
+        <div className="mb-4 rounded-xl border border-blue-700 bg-blue-900/20 px-4 py-3 text-sm text-blue-200">
+          No published lists were found yet. Showing available draft lists so you can start tracking.
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 mb-5">
         <select aria-label="Filter by brand" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} className="rounded-xl border border-stone-700 bg-stone-800 px-3 py-2.5 text-sm text-stone-200">

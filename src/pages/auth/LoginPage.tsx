@@ -139,7 +139,7 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen bg-stone-900 flex items-center justify-center px-4">
         <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 w-full max-w-sm text-center">
-          <div className="text-5xl mb-4">🔧</div>
+          <div className="text-5xl mb-4">🏎️</div>
           <h1 className="text-2xl font-bold text-stone-50 mb-2">Die Cast Vault</h1>
           <p className="text-stone-400 text-sm mb-6 leading-relaxed">
             Firebase is not configured. Add your <code className="font-mono text-amber-400">VITE_FIREBASE_*</code>{' '}
@@ -177,7 +177,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <div className="text-5xl mb-3">🔧</div>
+            <div className="text-5xl mb-3">🏎️</div>
             <div className="text-2xl font-bold text-amber-500">Die Cast Vault</div>
           </Link>
           <p className="text-stone-400 mt-2">

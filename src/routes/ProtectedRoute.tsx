@@ -8,7 +8,7 @@ export default function ProtectedRoute() {
     return (
       <div className="min-h-screen bg-stone-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-5xl mb-4">🔧</div>
+          <div className="text-5xl mb-4">🏎️</div>
           <div className="text-stone-400 text-xl">Loading your vault...</div>
         </div>
       </div>

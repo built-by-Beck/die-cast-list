@@ -23,7 +23,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-stone-900 text-stone-100">
       {/* Header */}
       <header className="border-b border-stone-800 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
-        <div className="text-2xl font-bold text-amber-500">🔧 Die Cast Vault</div>
+        <div className="text-2xl font-bold text-amber-500">🏎️ Die Cast Vault</div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
           Sign In
         </Button>
@@ -31,7 +31,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="text-center px-6 py-20 max-w-4xl mx-auto">
-        <div className="text-6xl mb-6">🔧</div>
+        <div className="text-6xl mb-6">🏎️</div>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-stone-50 mb-6 leading-tight">
           Your Diecast Collection,
           <span className="text-amber-500"> Perfectly Organized</span>

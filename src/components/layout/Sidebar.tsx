@@ -38,7 +38,7 @@ export default function Sidebar() {
       <div className="p-6 border-b border-stone-700">
         <NavLink to="/dashboard" className="block">
           <div className="text-2xl font-bold text-amber-500 leading-tight">
-            🔧 Die Cast Vault
+            🏎️ Die Cast Vault
           </div>
         </NavLink>
         {userDoc && (

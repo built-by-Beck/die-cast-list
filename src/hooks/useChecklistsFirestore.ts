@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
   doc,
@@ -27,6 +26,7 @@ export function usePublicMasterChecklists() {
   const [checklists, setChecklists] = useState<MasterChecklist[]>([]);
   const [loading, setLoading] = useState(FB);
   const [error, setError] = useState<string | null>(null);
+  const [usingDraftFallback, setUsingDraftFallback] = useState(false);
 
   useEffect(() => {
     if (!FB) {
@@ -35,7 +35,7 @@ export function usePublicMasterChecklists() {
       return;
     }
 
-    const q = query(collection(db, 'checklists'), where('isPublic', '==', true));
+    const q = query(collection(db, 'checklists'));
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -43,7 +43,11 @@ export function usePublicMasterChecklists() {
           .map((d) => docToMasterChecklist(d.id, d.data()))
           .filter((cl) => !cl.archivedAt);
         rows.sort((a, b) => b.year - a.year || a.name.localeCompare(b.name));
-        setChecklists(rows);
+        const publicRows = rows.filter((cl) => cl.isPublic);
+        // If nothing is published yet, fall back to drafts so users can still track lists.
+        const visibleRows = publicRows.length > 0 ? publicRows : rows;
+        setChecklists(visibleRows);
+        setUsingDraftFallback(publicRows.length === 0 && rows.length > 0);
         setLoading(false);
         setError(null);
       },
@@ -56,7 +60,7 @@ export function usePublicMasterChecklists() {
     return unsub;
   }, []);
 
-  return { checklists, loading, error };
+  return { checklists, loading, error, usingDraftFallback };
 }
 
 /** All master checklists (admin). */

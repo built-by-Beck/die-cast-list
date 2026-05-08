@@ -9,7 +9,7 @@ import type { MasterChecklist, ChecklistProgress } from '../types';
 export default function ChecklistsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { checklists: publishedChecklists, loading: listsLoading } = usePublicMasterChecklists();
+  const { checklists: publishedChecklists, loading: listsLoading, usingDraftFallback } = usePublicMasterChecklists();
   const { byChecklistId: progressById } = useUserChecklistSummaries(user?.uid);
 
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -85,6 +85,11 @@ export default function ChecklistsPage() {
         />
       ) : (
         <>
+      {usingDraftFallback && (
+        <div className="mb-4 rounded-xl border border-blue-700 bg-blue-900/20 px-4 py-3 text-sm text-blue-200">
+          No published checklists were found yet. Showing available draft lists.
+        </div>
+      )}
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
