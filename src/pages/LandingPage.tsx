@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
+import basicPlanImage from '../../media/die-cast-vault-basic.png';
+import proPlanImage from '../../media/die-cast-vault-pro.png';
 
 const FEATURES = [
   { icon: '✅', title: 'Master Checklists', desc: 'Browse complete set lists and check off what you own. Free for everyone.' },
@@ -108,6 +110,11 @@ export default function LandingPage() {
 
           {/* Basic */}
           <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 flex flex-col">
+            <img
+              src={basicPlanImage}
+              alt="Die Cast Vault Basic plan"
+              className="w-full h-32 object-cover rounded-xl border border-stone-700 mb-4"
+            />
             <div className="text-xl font-bold text-stone-50 mb-1">Basic</div>
             <div className="text-4xl font-extrabold text-amber-500 mb-1">
               $7<span className="text-lg text-stone-400 font-normal">/mo</span>
@@ -130,6 +137,11 @@ export default function LandingPage() {
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-stone-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
               Most Popular
             </div>
+            <img
+              src={proPlanImage}
+              alt="Die Cast Vault Pro plan"
+              className="w-full h-32 object-cover rounded-xl border border-amber-500/50 mb-4"
+            />
             <div className="text-xl font-bold text-stone-50 mb-1">Pro</div>
             <div className="text-4xl font-extrabold text-amber-400 mb-1">
               $22<span className="text-lg text-stone-400 font-normal">/mo</span>

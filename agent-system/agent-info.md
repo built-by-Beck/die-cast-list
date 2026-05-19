@@ -403,3 +403,109 @@ ACCEPTED WITH MINOR CONCERNS
 **Risks / Blockers:**
 - Repo-wide `npm run format:check` still flags many pre-existing files outside this targeted fix scope.
 
+---
+
+## 2026-05-07 - Stripe plan images integrated in app UI
+
+**Classification:** SMALL
+**Task:** Integrate newly added Basic/Pro Stripe product images from `media/` into pricing and upgrade surfaces.
+
+**Summary:**
+- Wired `media/die-cast-vault-basic.png` and `media/die-cast-vault-pro.png` into `LandingPage` pricing cards.
+- Added plan image previews to `UpgradeWall` so gated feature prompts visually match Stripe product assets.
+- Added plan image previews in `SettingsPage` under plan limits and upgrade actions.
+
+**Validation:**
+- `npm run typecheck` passed
+- `npm run lint` passed
+- `ReadLints` for touched files returned no diagnostics
+
+**Review Verdict:**
+ACCEPTED
+
+---
+
+## 2026-05-08 - Stripe Cloud Functions: Checkout + webhook billing sync
+
+**Classification:** LARGE  
+**Task:** Implement minimal Stripe billing via Firebase Cloud Functions (callable checkout session + HTTP webhook) per approved plan; frontend uses callable instead of payment links.
+
+**Summary:**
+- Added `functions/` TypeScript project with `createCheckoutSession` (callable) and `stripeWebhook` (HTTP, raw body signature verification).
+- Syncs `users/{uid}` billing fields from subscription events; skips writes when `lifetimeAccess` is true.
+- Wired `UpgradeWall` and `SettingsPage` to `startStripeCheckout` via `src/lib/billing.ts`; exported `firebaseApp` from `src/lib/firebase.ts` for `getFunctions`.
+- Updated `firebase.json` (functions + predeploy build), added `.firebaserc`, root `.env.example` and `README.md` (billing setup without sample secrets), `functions/.env.example`.
+
+**Validation:**
+- `npm run build` (root) passed  
+- `npm run build` (`functions/`) passed  
+- `ReadLints` on touched frontend files: no issues  
+
+**Review Verdict:**  
+ACCEPTED WITH MINOR CONCERNS  
+
+**Risks / Blockers:**
+- First deploy requires setting Firebase params (`PUBLIC_APP_URL`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_PRO_ID`) and secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) before checkout works in production.
+- `predeploy` uses bash-style `$RESOURCE_DIR`; if Windows deploy fails, run `npm run build` in `functions/` before `firebase deploy --only functions` or adjust predeploy.
+
+---
+
+## 2026-05-08 - Firebase project pinning + functions deploy attempt
+
+**Classification:** SMALL  
+**Task:** Ensure deploys target the correct Firebase project (`collectors-garage-app`, matching `VITE_FIREBASE_PROJECT_ID`).
+
+**Summary:**
+- Added `production` alias in `.firebaserc`; pinned `npm run deploy:functions` to `--project collectors-garage-app`.
+- Fixed `functions/package.json` Node engine from `>=20` to `20` (Firebase CLI rejected range).
+- README: Secret Manager API note before first secret-backed deploy.
+
+**Validation:**
+- `firebase use collectors-garage-app` succeeded  
+- `npm run deploy:functions` failed: Secret Manager API not enabled on project (403); user must enable in Google Cloud Console then redeploy.  
+- `gcloud` not available in PATH on this machine to enable API via CLI.
+
+**Review Verdict:**  
+ACCEPTED WITH MINOR CONCERNS  
+
+---
+
+## 2026-05-12 - Lists + AI Chat Assistant (PBRD LARGE)
+
+**Classification:** LARGE
+**Task:** Fix empty ChooseListsPage, fix AI collection-name bug, add admin URL-based import, build conversational AI chat assistant (Pro-only).
+
+**Summary:**
+- Fixed critical bug: `importChecklistFromWiki` was writing to `masterChecklists` collection; frontend reads from `checklists`. Changed to `checklists` throughout.
+- Extracted shared `importFromWikiUrl()` helper in `functions/ai/src/index.ts` to eliminate duplication.
+- Added `importChecklistAdmin` Cloud Function (admin role check, no Pro requirement) — admins can now import any wiki list by URL without copy-pasting markup.
+- Added `askAI` Cloud Function (Pro-only): classifies user intent, searches Firestore `checklists` for matches, returns matched lists + Gemini-generated reply. Handles find_list / billing_help / collection_advice / general intents.
+- Built `AIChatPanel.tsx` — floating ✨ button (bottom-right, above BottomNav on mobile). Opens sliding chat panel. Auto-tracks best matched list for the user when AI finds one. Session-only message history.
+- Wired `AIChatPanel` into `AppLayout.tsx` — Pro users get the full chat; Basic/Free users see a locked button that explains the Pro upgrade.
+- Added "✨ AI Import from URL" section at top of `AdminChecklistsPage` — calls `importChecklistAdmin` via callable.
+
+**Files Changed:**
+- `functions/ai/src/index.ts` — bug fix + shared helper + `importChecklistAdmin` + `askAI`
+- `src/components/ui/AIChatPanel.tsx` — NEW
+- `src/components/layout/AppLayout.tsx` — wired chat + locked button
+- `src/pages/admin/AdminChecklistsPage.tsx` — AI URL import section
+
+**Validation:**
+- `npm run typecheck` — passed, zero errors
+- `cd functions/ai && npm run build` — passed
+- `npm run build` (root) — passed, zero errors
+
+**Review Verdict:**
+ACCEPTED WITH MINOR CONCERNS
+
+**Risks / Blockers:**
+- `functions/ai` requires `GOOGLE_GENAI_API_KEY` secret set in Firebase before `askAI`, `importChecklistAdmin`, and `importChecklistFromWiki` work in production.
+- `importChecklistAdmin` requires the calling user to have `role: 'admin'` in Firestore.
+- Auto-track in `AIChatPanel` writes directly to Firestore — stays in sync with `trackChecklist` schema but must be updated if that schema changes.
+
+**Next Recommended Action:**
+1. Set `GOOGLE_GENAI_API_KEY` secret: `firebase functions:secrets:set GOOGLE_GENAI_API_KEY`
+2. Deploy AI functions: `firebase deploy --only functions:ai`
+3. Admin: Use "✨ AI Import from URL" on AdminChecklistsPage to seed initial checklists (2025 HW Mainline, 2024 HW Mainline, etc.), then publish them.
+4. Test AI chat as a Pro user.
+

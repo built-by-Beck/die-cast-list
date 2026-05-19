@@ -81,7 +81,7 @@ export default function ChecklistsPage() {
         <EmptyState
           icon="✅"
           title="No checklists published yet"
-          description="Publish master checklists from Admin (CSV import) and they will appear here."
+          description="Admin must import list data first (HotWheels wiki source import is available in Admin Checklists)."
         />
       ) : (
         <>

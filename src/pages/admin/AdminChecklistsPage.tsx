@@ -18,7 +18,7 @@ import type { ParseCSVResult } from "../../lib/parseChecklist";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import { ConfirmModal } from "../../components/ui/Modal";
-import { db } from "../../lib/firebase";
+import { db, functions, httpsCallable } from "../../lib/firebase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAllMasterChecklists } from "../../hooks/useChecklistsFirestore";
 import { normalizedToMasterItem } from "../../lib/firestoreConverters";
@@ -46,6 +46,58 @@ export default function AdminChecklistsPage() {
   const [parseResult, setParseResult] = useState<ParseCSVResult | null>(null);
   const [importDone, setImportDone] = useState(false);
   const [sourceMode, setSourceMode] = useState<"csv" | "wiki">("csv");
+  const [quickImportLoading, setQuickImportLoading] = useState(false);
+  const [quickImportError, setQuickImportError] = useState("");
+  const [quickImportSuccess, setQuickImportSuccess] = useState("");
+  const [quickImportForm, setQuickImportForm] = useState({
+    name: `${new Date().getFullYear()} Hot Wheels Mainline`,
+    brand: "Hot Wheels" as Brand,
+    year: String(new Date().getFullYear()),
+    category: "Mainline" as ChecklistCategory,
+    sourceUrl: "",
+    wikiSource: "",
+  });
+
+  // AI URL import state
+  const [aiUrlForm, setAiUrlForm] = useState({
+    wikiUrl: "",
+    name: `${new Date().getFullYear()} Hot Wheels Mainline`,
+    brand: "Hot Wheels" as Brand,
+    year: String(new Date().getFullYear()),
+    category: "Mainline" as ChecklistCategory,
+  });
+  const [aiUrlLoading, setAiUrlLoading] = useState(false);
+  const [aiUrlError, setAiUrlError] = useState("");
+  const [aiUrlSuccess, setAiUrlSuccess] = useState("");
+
+  const handleAiUrlImport = async () => {
+    if (!user || !functions) return;
+    setAiUrlError("");
+    setAiUrlSuccess("");
+    if (!aiUrlForm.wikiUrl.trim()) {
+      setAiUrlError("Paste a wiki URL first.");
+      return;
+    }
+    setAiUrlLoading(true);
+    try {
+      type AdminImportInput = { wikiUrl: string; name: string; brand: string; year: number; category: string };
+      const fn = httpsCallable<AdminImportInput, { totalCars: number; name: string; note: string }>(
+        functions,
+        "importChecklistAdmin",
+      );
+      const res = await fn({ ...aiUrlForm, year: Number(aiUrlForm.year) });
+      setAiUrlSuccess(
+        `Created "${res.data.name}" with ${res.data.totalCars} cars. ${res.data.note}`,
+      );
+      setAiUrlForm((prev) => ({ ...prev, wikiUrl: "" }));
+    } catch (e: unknown) {
+      setAiUrlError(
+        e instanceof Error ? e.message : "Import failed — check the URL and try again.",
+      );
+    } finally {
+      setAiUrlLoading(false);
+    }
+  };
 
   const toSlug = (value: string) =>
     value
@@ -223,6 +275,128 @@ export default function AdminChecklistsPage() {
     setImportDone(true);
   };
 
+  const importParsedItems = async (
+    checklist: MasterChecklist,
+    parsed: ParseCSVResult,
+  ) => {
+    const checklistRef = doc(db, "checklists", checklist.id);
+    const itemsCol = collection(db, "checklists", checklist.id, "items");
+
+    const seriesSet = new Set<string>();
+    (checklist.uniqueSeries ?? []).forEach((s) => seriesSet.add(s));
+
+    let batch = writeBatch(db);
+    let ops = 0;
+    const flush = async () => {
+      if (ops === 0) return;
+      await batch.commit();
+      batch = writeBatch(db);
+      ops = 0;
+    };
+
+    for (const norm of parsed.items) {
+      const itemRef = doc(
+        itemsCol,
+        buildStableItemId(
+          checklist,
+          norm.toyNumber,
+          norm.collectorNumber,
+          norm.modelName,
+          norm.variationLabel,
+        ),
+      );
+      batch.set(
+        itemRef,
+        {
+          ...normalizedToMasterItem(itemRef.id, norm),
+          brandId:
+            checklist.brandId ?? checklist.brand.toLowerCase().replace(/\s+/g, "-"),
+          year: checklist.year,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+      if (norm.seriesName) seriesSet.add(norm.seriesName);
+      ops++;
+      if (ops >= 450) await flush();
+    }
+
+    if (ops > 0) await flush();
+
+    const updatedItems = await getDocs(itemsCol);
+    await updateDoc(checklistRef, {
+      brandId: checklist.brandId ?? checklist.brand.toLowerCase().replace(/\s+/g, "-"),
+      brandName: checklist.brandName ?? checklist.brand,
+      totalCars: updatedItems.size,
+      uniqueSeries: [...seriesSet],
+      updatedAt: serverTimestamp(),
+    });
+  };
+
+  const handleQuickWikiImport = async () => {
+    if (!user) return;
+    setQuickImportError("");
+    setQuickImportSuccess("");
+    if (!quickImportForm.wikiSource.trim()) {
+      setQuickImportError("Paste wiki source first.");
+      return;
+    }
+
+    setQuickImportLoading(true);
+    try {
+      const parsed = parseChecklistMediaWiki(quickImportForm.wikiSource);
+      if (parsed.items.length === 0) {
+        setQuickImportError(
+          `No list items were parsed. ${parsed.errors[0]?.message ?? "Check your source and try again."}`,
+        );
+        setQuickImportLoading(false);
+        return;
+      }
+
+      const checklistRef = doc(collection(db, "checklists"));
+      const checklist: MasterChecklist = {
+        id: checklistRef.id,
+        name: quickImportForm.name.trim(),
+        brand: quickImportForm.brand,
+        brandId: quickImportForm.brand.toLowerCase().replace(/\s+/g, "-"),
+        brandName: quickImportForm.brand,
+        year: Number(quickImportForm.year),
+        category: quickImportForm.category,
+        description: "",
+        sourceName: "HotWheels Wiki",
+        sourceUrl: quickImportForm.sourceUrl.trim(),
+        sourceLicense: "",
+        sourceAttribution: "Imported from user-pasted HotWheels wiki source",
+        totalCars: 0,
+        uniqueSeries: [],
+        isPublic: false,
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        archivedAt: null,
+      };
+
+      await setDoc(checklistRef, {
+        ...checklist,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      await importParsedItems(checklist, parsed);
+      setQuickImportSuccess(
+        `Created "${checklist.name}" and imported ${parsed.items.length} items. Publish it when ready.`,
+      );
+      setQuickImportForm((prev) => ({ ...prev, wikiSource: "" }));
+    } catch (err) {
+      setQuickImportError(
+        err instanceof Error ? err.message : "Quick import failed.",
+      );
+    } finally {
+      setQuickImportLoading(false);
+    }
+  };
+
   const inputClass =
     "w-full bg-stone-900 border border-stone-600 text-stone-100 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-amber-500 placeholder-stone-600";
 
@@ -240,6 +414,153 @@ export default function AdminChecklistsPage() {
         <h1 className="page-title mb-0">Master Checklists</h1>
         <Button onClick={() => setShowCreate(true)}>➕ Create Checklist</Button>
       </div>
+
+      {/* AI URL Import section */}
+      <section className="bg-stone-900 border border-amber-700/50 rounded-2xl p-5 mb-4">
+        <h2 className="text-lg font-bold text-amber-300 mb-1">
+          ✨ AI Import from URL
+        </h2>
+        <p className="text-stone-400 text-sm mb-4">
+          Paste any Hot Wheels or Matchbox wiki URL — AI fetches and parses the list automatically. No copy-paste required.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+          <input
+            value={aiUrlForm.name}
+            onChange={(e) => setAiUrlForm((prev) => ({ ...prev, name: e.target.value }))}
+            placeholder="List title (e.g. 2026 Hot Wheels Mainline)"
+            className={inputClass}
+          />
+          <input
+            value={aiUrlForm.year}
+            onChange={(e) => setAiUrlForm((prev) => ({ ...prev, year: e.target.value }))}
+            placeholder="Year"
+            className={inputClass}
+          />
+          <select
+            value={aiUrlForm.brand}
+            onChange={(e) => setAiUrlForm((prev) => ({ ...prev, brand: e.target.value as Brand }))}
+            className={inputClass}
+          >
+            {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select
+            value={aiUrlForm.category}
+            onChange={(e) => setAiUrlForm((prev) => ({ ...prev, category: e.target.value as ChecklistCategory }))}
+            className={inputClass}
+          >
+            {CHECKLIST_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <input
+          value={aiUrlForm.wikiUrl}
+          onChange={(e) => setAiUrlForm((prev) => ({ ...prev, wikiUrl: e.target.value }))}
+          placeholder="https://hotwheels.fandom.com/wiki/2026_Hot_Wheels"
+          className={`${inputClass} mb-3`}
+        />
+        {aiUrlError && <p className="mb-3 text-sm text-red-400">{aiUrlError}</p>}
+        {aiUrlSuccess && <p className="mb-3 text-sm text-green-400">{aiUrlSuccess}</p>}
+        <Button
+          onClick={() => void handleAiUrlImport()}
+          loading={aiUrlLoading}
+          disabled={!aiUrlForm.wikiUrl.trim() || aiUrlLoading}
+        >
+          ✨ Import from URL
+        </Button>
+        {aiUrlLoading && (
+          <p className="mt-2 text-xs text-stone-500">This may take 30–60 seconds while AI parses the page…</p>
+        )}
+      </section>
+
+      <section className="bg-stone-800 border border-stone-700 rounded-2xl p-5 mb-6">
+        <h2 className="text-lg font-bold text-stone-100 mb-2">
+          Quick Import From HotWheels Wiki Source
+        </h2>
+        <p className="text-stone-400 text-sm mb-4">
+          Go to hotwheels.fandom.com/wiki, open the list page you want, click edit source, copy the source, and paste it here.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+          <input
+            value={quickImportForm.name}
+            onChange={(e) =>
+              setQuickImportForm((prev) => ({ ...prev, name: e.target.value }))
+            }
+            placeholder="List title (e.g. 2026 Hot Wheels Mainline)"
+            className={inputClass}
+          />
+          <input
+            value={quickImportForm.year}
+            onChange={(e) =>
+              setQuickImportForm((prev) => ({ ...prev, year: e.target.value }))
+            }
+            placeholder="Year"
+            className={inputClass}
+          />
+          <select
+            value={quickImportForm.brand}
+            onChange={(e) =>
+              setQuickImportForm((prev) => ({
+                ...prev,
+                brand: e.target.value as Brand,
+              }))
+            }
+            className={inputClass}
+          >
+            {BRANDS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          <select
+            value={quickImportForm.category}
+            onChange={(e) =>
+              setQuickImportForm((prev) => ({
+                ...prev,
+                category: e.target.value as ChecklistCategory,
+              }))
+            }
+            className={inputClass}
+          >
+            {CHECKLIST_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <input
+          value={quickImportForm.sourceUrl}
+          onChange={(e) =>
+            setQuickImportForm((prev) => ({ ...prev, sourceUrl: e.target.value }))
+          }
+          placeholder="Optional source URL"
+          className={`${inputClass} mb-3`}
+        />
+        <textarea
+          value={quickImportForm.wikiSource}
+          onChange={(e) =>
+            setQuickImportForm((prev) => ({ ...prev, wikiSource: e.target.value }))
+          }
+          rows={8}
+          placeholder="Paste MediaWiki source here"
+          className="w-full bg-stone-900 border border-stone-600 text-stone-100 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-amber-500 placeholder-stone-700 resize-none"
+        />
+        {quickImportError && (
+          <p className="mt-3 text-sm text-red-400">{quickImportError}</p>
+        )}
+        {quickImportSuccess && (
+          <p className="mt-3 text-sm text-green-400">{quickImportSuccess}</p>
+        )}
+        <div className="mt-4">
+          <Button
+            onClick={() => void handleQuickWikiImport()}
+            loading={quickImportLoading}
+            disabled={!quickImportForm.wikiSource.trim()}
+          >
+            Create List + Import Source
+          </Button>
+        </div>
+      </section>
 
       {loading ? (
         <p className="text-stone-400">Loading checklists...</p>

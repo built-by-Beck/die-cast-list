@@ -78,6 +78,10 @@ export function canAccessPremium(userDoc: UserDoc): boolean {
   return getEffectivePlan(userDoc) === "premium";
 }
 
+export function canUseAI(userDoc: UserDoc): boolean {
+  return getEffectivePlan(userDoc) === "premium";
+}
+
 // Free users are in the app (checklists), just gated from paid features
 export function canAccessApp(userDoc: UserDoc): boolean {
   const plan = getEffectivePlan(userDoc);

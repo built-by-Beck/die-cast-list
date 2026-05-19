@@ -1,17 +1,32 @@
+import { useState } from 'react';
+import basicPlanImage from '../../../media/die-cast-vault-basic.png';
+import proPlanImage from '../../../media/die-cast-vault-pro.png';
+import { formatCheckoutError, startStripeCheckout } from '../../lib/billing';
+import { firebaseApp } from '../../lib/firebase';
+
 interface UpgradeWallProps {
   feature: string;
   requiredPlan: 'basic' | 'premium';
   description?: string;
 }
 
-const BASIC_LINK  = import.meta.env.VITE_STRIPE_BASIC_LINK  as string | undefined;
-const PREMIUM_LINK = import.meta.env.VITE_STRIPE_PREMIUM_LINK as string | undefined;
-
 export default function UpgradeWall({ feature, requiredPlan, description }: UpgradeWallProps) {
-  const hasStripe = Boolean(BASIC_LINK && PREMIUM_LINK);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<'basic' | 'premium' | null>(null);
 
-  const openBasic   = () => BASIC_LINK   && window.open(BASIC_LINK,   '_blank');
-  const openPremium = () => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank');
+  const canCheckout = Boolean(firebaseApp);
+
+  const runCheckout = async (plan: 'basic' | 'premium') => {
+    setError(null);
+    setLoading(plan);
+    try {
+      await startStripeCheckout(plan);
+    } catch (e: unknown) {
+      setError(formatCheckoutError(e));
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
@@ -25,43 +40,65 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
         <p className="text-stone-400 mb-6 max-w-sm leading-relaxed">{description}</p>
       )}
 
-      {!hasStripe && (
+      {!canCheckout && (
         <p className="text-stone-600 text-sm mb-6">
-          (Stripe not configured — payments unavailable in this environment)
+          (Billing unavailable — Firebase is not configured in this environment)
         </p>
       )}
+
+      {error && (
+        <p className="text-red-400 text-sm mb-4 max-w-md" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl mb-5">
+        <img
+          src={basicPlanImage}
+          alt="Die Cast Vault Basic plan"
+          className="w-full h-24 object-cover rounded-xl border border-stone-700"
+        />
+        <img
+          src={proPlanImage}
+          alt="Die Cast Vault Pro plan"
+          className="w-full h-24 object-cover rounded-xl border border-stone-700"
+        />
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
         {requiredPlan === 'basic' ? (
           <>
             <button
-              disabled={!hasStripe}
-              onClick={openBasic}
+              type="button"
+              disabled={!canCheckout || loading !== null}
+              onClick={() => void runCheckout('basic')}
               className="flex-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-40 text-stone-900 font-bold px-5 py-3 rounded-xl transition-colors"
             >
-              Upgrade to Basic — $7/mo
+              {loading === 'basic' ? 'Opening checkout…' : 'Upgrade to Basic — $7/mo'}
             </button>
             <button
-              disabled={!hasStripe}
-              onClick={openPremium}
+              type="button"
+              disabled={!canCheckout || loading !== null}
+              onClick={() => void runCheckout('premium')}
               className="flex-1 bg-stone-700 hover:bg-stone-600 active:bg-stone-800 disabled:opacity-40 text-stone-200 font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
             >
-              Go Pro — $22/mo
+              {loading === 'premium' ? 'Opening checkout…' : 'Go Pro — $22/mo'}
             </button>
           </>
         ) : (
           <button
-            disabled={!hasStripe}
-            onClick={openPremium}
+            type="button"
+            disabled={!canCheckout || loading !== null}
+            onClick={() => void runCheckout('premium')}
             className="flex-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-40 text-stone-900 font-bold px-5 py-3 rounded-xl transition-colors"
           >
-            Upgrade to Pro — $22/mo
+            {loading === 'premium' ? 'Opening checkout…' : 'Upgrade to Pro — $22/mo'}
           </button>
         )}
       </div>
 
       <p className="text-stone-600 text-xs mt-6 max-w-xs">
-        After payment your account will be activated within 24 hours.
+        Your plan updates automatically after checkout when webhooks are configured.
         <br />
         Already paid?{' '}
         <a href="mailto:support@diecastvault.app" className="text-amber-500 hover:underline">

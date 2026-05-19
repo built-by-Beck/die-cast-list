@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "collectors-garage-app",
+    "production": "collectors-garage-app"
+  }
+}

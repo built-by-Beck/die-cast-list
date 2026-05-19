@@ -10,7 +10,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{json,md}\"",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "firebase:use-production": "firebase use production",
+    "deploy:functions": "firebase deploy --only functions --project collectors-garage-app"
   },
   "dependencies": {
     "firebase": "^10.12.0",

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getEffectivePlan, getPlanLimits } from '../lib/access';
 import Button from '../components/ui/Button';
-
-const BASIC_LINK   = import.meta.env.VITE_STRIPE_BASIC_LINK   as string | undefined;
-const PREMIUM_LINK = import.meta.env.VITE_STRIPE_PREMIUM_LINK as string | undefined;
+import basicPlanImage from '../../media/die-cast-vault-basic.png';
+import proPlanImage from '../../media/die-cast-vault-pro.png';
+import { formatCheckoutError, startStripeCheckout } from '../lib/billing';
+import { firebaseApp } from '../lib/firebase';
 
 export default function SettingsPage() {
   const { userDoc, logout } = useAuth();
@@ -15,6 +16,22 @@ export default function SettingsPage() {
   const [simpleChecklistMode, setSimpleChecklistMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState<'basic' | 'premium' | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const canCheckout = Boolean(firebaseApp);
+
+  const handleCheckout = async (plan: 'basic' | 'premium') => {
+    setCheckoutError(null);
+    setCheckoutLoading(plan);
+    try {
+      await startStripeCheckout(plan);
+    } catch (e: unknown) {
+      setCheckoutError(formatCheckoutError(e));
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -66,6 +83,18 @@ export default function SettingsPage() {
       {/* Plan limits */}
       <section className="bg-stone-800 border border-stone-700 rounded-2xl p-6 mb-5">
         <h2 className="section-title">Your Plan Limits</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <img
+            src={basicPlanImage}
+            alt="Die Cast Vault Basic plan"
+            className="w-full h-20 object-cover rounded-xl border border-stone-700"
+          />
+          <img
+            src={proPlanImage}
+            alt="Die Cast Vault Pro plan"
+            className="w-full h-20 object-cover rounded-xl border border-stone-700"
+          />
+        </div>
         <div className="space-y-3 text-sm">
           {[
             { label: 'Max Cars',            value: limits.maxCars },
@@ -80,13 +109,20 @@ export default function SettingsPage() {
             </div>
           ))}
         </div>
+        {checkoutError && (
+          <p className="text-red-400 text-sm mt-3 text-center" role="alert">
+            {checkoutError}
+          </p>
+        )}
+
         {(effectivePlan === 'free' || effectivePlan === 'none') && !userDoc?.lifetimeAccess && (
           <>
             <Button
               className="mt-4"
               fullWidth
-              onClick={() => BASIC_LINK && window.open(BASIC_LINK, '_blank')}
-              disabled={!BASIC_LINK}
+              onClick={() => void handleCheckout('basic')}
+              disabled={!canCheckout || checkoutLoading !== null}
+              loading={checkoutLoading === 'basic'}
             >
               Upgrade to Basic — $7/mo
             </Button>
@@ -94,8 +130,9 @@ export default function SettingsPage() {
               className="mt-2"
               variant="secondary"
               fullWidth
-              onClick={() => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank')}
-              disabled={!PREMIUM_LINK}
+              onClick={() => void handleCheckout('premium')}
+              disabled={!canCheckout || checkoutLoading !== null}
+              loading={checkoutLoading === 'premium'}
             >
               Go Pro — $22/mo
             </Button>
@@ -105,8 +142,9 @@ export default function SettingsPage() {
           <Button
             className="mt-4"
             fullWidth
-            onClick={() => PREMIUM_LINK && window.open(PREMIUM_LINK, '_blank')}
-            disabled={!PREMIUM_LINK}
+            onClick={() => void handleCheckout('premium')}
+            disabled={!canCheckout || checkoutLoading !== null}
+            loading={checkoutLoading === 'premium'}
           >
             Upgrade to Pro — $22/mo
           </Button>
