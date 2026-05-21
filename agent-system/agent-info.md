@@ -511,6 +511,38 @@ ACCEPTED WITH MINOR CONCERNS
 
 ---
 
+## 2026-05-21 - First production launch / go-live
+
+**Classification:** LARGE
+**Task:** Deploy the app live so collectors can use it; set up free lifetime Pro for the founder + one beta tester; everyone else pays.
+
+**Summary:**
+- Connected the app to its existing Firebase project `collectors-garage-app` (Die-Cast-Vault): pulled web SDK config and created `.env` (gitignored) + `.firebaserc`.
+- Ran `npm install` + `npm run build` (clean) and ran `firebase deploy` — Firestore rules, Firestore indexes, Storage rules, and Hosting all released.
+- Verified live site responds HTTP 200 at https://collectors-garage-app.web.app.
+- Verified Firebase Auth: Email/Password and Google sign-in are both enabled — sign-up works.
+- Decision: free lifetime Pro for founder + Keith is granted via the `lifetimeAccess` flag (purpose-built, permanent, Stripe-independent), NOT via a Stripe coupon. A coupon only zeroes the Stripe charge; with no webhook it cannot activate an in-app account.
+- Decision: paying customers use manual activation — Stripe Payment Links + hand-setting `plan` + `subscriptionStatus: 'active'` in Firestore. No automated billing (would need Cloud Functions).
+- Added `LAUNCH.md` — operations guide covering lifetime grants, manual paid activation, redeploy.
+
+**Validation:**
+- `npm run build` passed.
+- `firebase deploy` completed; deploy reported all targets released.
+- `curl` of the hosting URL returned 200 with `<title>Die Cast Vault</title>`.
+- Auth provider config confirmed via Identity Toolkit admin API (email enabled, google.com IdP enabled).
+
+**Risks / Blockers:**
+- No automated billing — every paying customer must be activated by hand in Firestore until Cloud Functions + Stripe webhooks are built.
+- Stripe Payment Links not yet created by the founder; `VITE_STRIPE_*` vars are commented out in `.env`, so in-app upgrade buttons show "payments unavailable" until added + redeployed.
+- Lifetime Pro for founder + Keith is pending — the two accounts must sign up first, then have `lifetimeAccess` set.
+- `UpgradeWall` references `support@diecastvault.app`; confirm that mailbox/domain exists or change it.
+
+**Next:**
+- Founder + Keith sign up; then set `lifetimeAccess: true` on both `users/{uid}` docs.
+- Create Stripe Payment Links, fill `VITE_STRIPE_*` in `.env`, redeploy.
+
+---
+
 ## 2026-06-16 - Full ship-readiness review (PBRD Review)
 
 **Classification:** LARGE (review only, no code changes)
