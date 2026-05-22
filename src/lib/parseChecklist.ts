@@ -283,6 +283,135 @@ function extractVariant(modelName: string): {
   return { cleanModelName: modelName, variantLabel: "" };
 }
 
+// ─── Fandom HTML Image URL Helpers ───────────────────────────────────────────
+
+function cleanFandomImageUrl(url: string): string {
+  if (!url || url.startsWith('data:')) return '';
+  // Remove Fandom CDN thumbnail path segments and query strings
+  // e.g. /scale-to-width-down/100, /window-crop/..., ?cb=...&path-prefix=en
+  return url
+    .replace(/\/scale-to-width-down\/\d+/i, '')
+    .replace(/\/window-crop\/[^?#]*/i, '')
+    .replace(/[?#].*$/, '');
+}
+
+function getImgSrc(img: Element): string {
+  for (const attr of ['src', 'data-src', 'data-lazy-src', 'data-original']) {
+    const val = img.getAttribute(attr) ?? '';
+    if (val && !val.startsWith('data:')) return cleanFandomImageUrl(val);
+  }
+  return '';
+}
+
+// ─── HTML Source Parser ───────────────────────────────────────────────────────
+// Parses rendered HTML (Ctrl+U page source) from hotwheels.fandom.com.
+// Extracts car data and actual CDN image URLs from wikitable elements.
+
+export function parseChecklistHtml(html: string): ParseCSVResult {
+  const domParser = new DOMParser();
+  const doc = domParser.parseFromString(html, 'text/html');
+  const items: NormalizedChecklistItem[] = [];
+  const errors: ParseCSVResult['errors'] = [];
+
+  let tables = Array.from(doc.querySelectorAll('table.wikitable'));
+  if (tables.length === 0) {
+    tables = Array.from(doc.querySelectorAll('table.sortable'));
+  }
+  if (tables.length === 0) {
+    return {
+      items: [],
+      errors: [{ row: 0, message: 'No checklist tables found. Paste the full page source from hotwheels.fandom.com (Ctrl+U → Ctrl+A → Ctrl+C).' }],
+    };
+  }
+
+  let rowCounter = 0;
+
+  for (const table of tables) {
+    const allRows = Array.from(
+      table.querySelectorAll(':scope > tbody > tr, :scope > tr'),
+    );
+    if (allRows.length < 2) continue;
+
+    // Find the first row with ≥2 <th> cells as the header
+    let headerRowIdx = -1;
+    for (let i = 0; i < Math.min(allRows.length, 5); i++) {
+      if (allRows[i].querySelectorAll('th').length >= 2) {
+        headerRowIdx = i;
+        break;
+      }
+    }
+    if (headerRowIdx === -1) continue;
+
+    const headers = Array.from(allRows[headerRowIdx].querySelectorAll('th')).map(
+      (th) => th.textContent?.trim().toLowerCase().replace(/\s+/g, ' ') ?? '',
+    );
+
+    const findCol = (...tests: RegExp[]): number => {
+      for (const re of tests) {
+        const idx = headers.findIndex((h) => re.test(h));
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    };
+
+    const cols = {
+      toyNumber: findCol(/toy\s*#/, /toy num/),
+      collectorNumber: findCol(/col\.?\s*#/, /collector/),
+      modelName: findCol(/model name/, /model/, /^name$/),
+      seriesName: findCol(/^series$/, /series name/),
+      seriesNumber: findCol(/series\s*#/, /series num/),
+      photo: findCol(/photo/, /image/, /^img$/, /^pic$/),
+    };
+
+    if (cols.modelName === -1) continue;
+
+    for (let r = headerRowIdx + 1; r < allRows.length; r++) {
+      const cells = Array.from(allRows[r].querySelectorAll('td'));
+      if (cells.length < 2) continue;
+
+      const getText = (idx: number): string =>
+        idx >= 0 && idx < cells.length ? (cells[idx].textContent?.trim() ?? '') : '';
+
+      const rawModelName = getText(cols.modelName);
+      if (!rawModelName) continue;
+
+      let photoUrl = '';
+      if (cols.photo >= 0 && cols.photo < cells.length) {
+        const imgEl = cells[cols.photo].querySelector('img');
+        if (imgEl) photoUrl = getImgSrc(imgEl);
+      }
+
+      rowCounter++;
+      const item = normalizeChecklistItem(
+        {
+          'toy #': getText(cols.toyNumber),
+          'col.#': getText(cols.collectorNumber),
+          'model name': rawModelName,
+          series: getText(cols.seriesName),
+          'series #': getText(cols.seriesNumber),
+          photo: photoUrl,
+        },
+        rowCounter,
+      );
+
+      if (!item.modelName) {
+        errors.push({ row: rowCounter, message: `Row ${rowCounter}: model name missing.` });
+        continue;
+      }
+      items.push(item);
+    }
+  }
+
+  if (items.length === 0 && errors.length === 0) {
+    errors.push({
+      row: 0,
+      message: 'No car rows found in the HTML tables. Verify you pasted the correct page source.',
+    });
+  }
+
+  return { items, errors };
+}
+
 export function parseChecklistMediaWiki(source: string): ParseCSVResult {
   const lines = source.split(/\r?\n/);
   const items: NormalizedChecklistItem[] = [];

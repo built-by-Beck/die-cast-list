@@ -12,8 +12,7 @@ import {
 } from "firebase/firestore";
 import type { MasterChecklist, Brand, ChecklistCategory } from "../../types";
 import { BRANDS, CHECKLIST_CATEGORIES } from "../../types";
-import { parseChecklistCsv } from "../../lib/parseChecklist";
-import { parseChecklistMediaWiki } from "../../lib/parseChecklist";
+import { parseChecklistCsv, parseChecklistMediaWiki, parseChecklistHtml } from "../../lib/parseChecklist";
 import type { ParseCSVResult } from "../../lib/parseChecklist";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
@@ -45,7 +44,8 @@ export default function AdminChecklistsPage() {
   const [csvText, setCsvText] = useState("");
   const [parseResult, setParseResult] = useState<ParseCSVResult | null>(null);
   const [importDone, setImportDone] = useState(false);
-  const [sourceMode, setSourceMode] = useState<"csv" | "wiki">("csv");
+  const [sourceMode, setSourceMode] = useState<"csv" | "wiki" | "html">("csv");
+  const [quickSourceMode, setQuickSourceMode] = useState<"wiki" | "html">("wiki");
   const [quickImportLoading, setQuickImportLoading] = useState(false);
   const [quickImportError, setQuickImportError] = useState("");
   const [quickImportSuccess, setQuickImportSuccess] = useState("");
@@ -207,7 +207,9 @@ export default function AdminChecklistsPage() {
     setParseResult(
       sourceMode === "csv"
         ? parseChecklistCsv(csvText)
-        : parseChecklistMediaWiki(csvText),
+        : sourceMode === "wiki"
+          ? parseChecklistMediaWiki(csvText)
+          : parseChecklistHtml(csvText),
     );
   };
 
@@ -345,7 +347,9 @@ export default function AdminChecklistsPage() {
 
     setQuickImportLoading(true);
     try {
-      const parsed = parseChecklistMediaWiki(quickImportForm.wikiSource);
+      const parsed = quickSourceMode === "wiki"
+      ? parseChecklistMediaWiki(quickImportForm.wikiSource)
+      : parseChecklistHtml(quickImportForm.wikiSource);
       if (parsed.items.length === 0) {
         setQuickImportError(
           `No list items were parsed. ${parsed.errors[0]?.message ?? "Check your source and try again."}`,
@@ -367,7 +371,9 @@ export default function AdminChecklistsPage() {
         sourceName: "HotWheels Wiki",
         sourceUrl: quickImportForm.sourceUrl.trim(),
         sourceLicense: "",
-        sourceAttribution: "Imported from user-pasted HotWheels wiki source",
+        sourceAttribution: quickSourceMode === "wiki"
+          ? "Imported from user-pasted HotWheels wiki source"
+          : "Imported from user-pasted HotWheels HTML page source",
         totalCars: 0,
         uniqueSeries: [],
         isPublic: false,
@@ -473,10 +479,26 @@ export default function AdminChecklistsPage() {
 
       <section className="bg-stone-800 border border-stone-700 rounded-2xl p-5 mb-6">
         <h2 className="text-lg font-bold text-stone-100 mb-2">
-          Quick Import From HotWheels Wiki Source
+          Quick Import From HotWheels Wiki
         </h2>
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => setQuickSourceMode("wiki")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${quickSourceMode === "wiki" ? "bg-amber-500 text-stone-900" : "bg-stone-700 text-stone-400 hover:bg-stone-600"}`}
+          >
+            Wiki Source
+          </button>
+          <button
+            onClick={() => setQuickSourceMode("html")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${quickSourceMode === "html" ? "bg-amber-500 text-stone-900" : "bg-stone-700 text-stone-400 hover:bg-stone-600"}`}
+          >
+            HTML Source (with images)
+          </button>
+        </div>
         <p className="text-stone-400 text-sm mb-4">
-          Go to hotwheels.fandom.com/wiki, open the list page you want, click edit source, copy the source, and paste it here.
+          {quickSourceMode === "wiki"
+            ? "Go to hotwheels.fandom.com/wiki, open the list page, click Edit → Source editor, select all, copy, and paste it here. Car names and numbers are captured; images are stored as file references only."
+            : "Go to hotwheels.fandom.com/wiki, open the list page, press Ctrl+U to view page source, press Ctrl+A to select all, Ctrl+C to copy, and paste it here. This captures actual image URLs from the page."}
         </p>
         <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <input
@@ -542,7 +564,11 @@ export default function AdminChecklistsPage() {
             setQuickImportForm((prev) => ({ ...prev, wikiSource: e.target.value }))
           }
           rows={8}
-          placeholder="Paste MediaWiki source here"
+          placeholder={
+            quickSourceMode === "wiki"
+              ? "Paste MediaWiki source here (from Edit → Source editor)"
+              : "Paste full HTML page source here (from Ctrl+U → Ctrl+A → Ctrl+C)"
+          }
           className="w-full bg-stone-900 border border-stone-600 text-stone-100 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-amber-500 placeholder-stone-700 resize-none"
         />
         {quickImportError && (
@@ -557,7 +583,7 @@ export default function AdminChecklistsPage() {
             loading={quickImportLoading}
             disabled={!quickImportForm.wikiSource.trim()}
           >
-            Create List + Import Source
+            {quickSourceMode === "html" ? "Create List + Import HTML (with images)" : "Create List + Import Source"}
           </Button>
         </div>
       </section>
@@ -773,7 +799,7 @@ export default function AdminChecklistsPage() {
             {/* Instructions */}
             <div className="bg-stone-900 border border-stone-700 rounded-xl p-4 text-xs text-stone-400 leading-relaxed">
               <p className="font-semibold text-stone-300 mb-1">Import source</p>
-              <div className="mb-2 flex gap-2">
+              <div className="mb-2 flex gap-2 flex-wrap">
                 <button
                   onClick={() => setSourceMode("csv")}
                   className={`rounded-lg px-2 py-1 ${sourceMode === "csv" ? "bg-amber-500 text-stone-900" : "bg-stone-800 text-stone-400"}`}
@@ -786,7 +812,18 @@ export default function AdminChecklistsPage() {
                 >
                   MediaWiki
                 </button>
+                <button
+                  onClick={() => setSourceMode("html")}
+                  className={`rounded-lg px-2 py-1 ${sourceMode === "html" ? "bg-amber-500 text-stone-900" : "bg-stone-800 text-stone-400"}`}
+                >
+                  HTML Source
+                </button>
               </div>
+              {sourceMode === "html" && (
+                <p className="text-xs text-stone-400 mb-1">
+                  On hotwheels.fandom.com, press <kbd className="bg-stone-700 px-1 rounded">Ctrl+U</kbd> to view page source, then <kbd className="bg-stone-700 px-1 rounded">Ctrl+A</kbd> + <kbd className="bg-stone-700 px-1 rounded">Ctrl+C</kbd> to copy, then paste below. Images will be captured.
+                </p>
+              )}
               <p className="font-semibold text-stone-300 mb-1">
                 Expected columns:
               </p>
@@ -806,7 +843,7 @@ export default function AdminChecklistsPage() {
               <>
                 <div>
                   <label className="block text-sm font-semibold text-stone-300 mb-1.5">
-                    Paste CSV data
+                    {sourceMode === "csv" ? "Paste CSV data" : sourceMode === "wiki" ? "Paste MediaWiki source" : "Paste HTML page source"}
                   </label>
                   <textarea
                     aria-label="Paste import source"
@@ -816,7 +853,9 @@ export default function AdminChecklistsPage() {
                     placeholder={
                       sourceMode === "csv"
                         ? 'Toy #,Col.#,Model Name,Series,Series #,Photo\n001,1/250,"\'69 Camaro Z/28",HW Dream Garage,1/4,File:camaro.jpg'
-                        : '{| class="wikitable"\n|-\n! Toy # !! Col.# !! Model Name !! Series !! Series # !! Photo\n|-\n| 001 || 1/250 || \'69 Camaro Z/28 || HW Dream Garage || 1/4 || [[File:camaro.jpg]]'
+                        : sourceMode === "wiki"
+                          ? '{| class="wikitable"\n|-\n! Toy # !! Col.# !! Model Name !! Series !! Series # !! Photo\n|-\n| 001 || 1/250 || \'69 Camaro Z/28 || HW Dream Garage || 1/4 || [[File:camaro.jpg]]'
+                          : "Paste the full HTML page source here (Ctrl+U → Ctrl+A → Ctrl+C from hotwheels.fandom.com)"
                     }
                     className="w-full bg-stone-900 border border-stone-600 text-stone-100 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-amber-500 placeholder-stone-700 resize-none"
                   />
@@ -836,7 +875,7 @@ export default function AdminChecklistsPage() {
                     onClick={handleParse}
                     disabled={!csvText.trim()}
                   >
-                    Parse CSV
+                    {sourceMode === "csv" ? "Parse CSV" : sourceMode === "wiki" ? "Parse Wiki Source" : "Parse HTML Source"}
                   </Button>
                 </div>
               </>
@@ -885,6 +924,7 @@ export default function AdminChecklistsPage() {
                       <table className="w-full text-xs min-w-[400px]">
                         <thead>
                           <tr className="text-stone-500 text-left border-b border-stone-700">
+                            {sourceMode === "html" && <th className="px-3 py-2">Photo</th>}
                             <th className="px-3 py-2">Toy #</th>
                             <th className="px-3 py-2">Col.#</th>
                             <th className="px-3 py-2">Model Name</th>
@@ -899,6 +939,19 @@ export default function AdminChecklistsPage() {
                               key={i}
                               className="border-b border-stone-800 hover:bg-stone-800/50"
                             >
+                              {sourceMode === "html" && (
+                                <td className="px-3 py-1.5">
+                                  {item.photoUrl ? (
+                                    <img
+                                      src={item.photoUrl}
+                                      alt={item.modelName}
+                                      className="h-8 w-12 object-contain rounded"
+                                    />
+                                  ) : (
+                                    <span className="text-stone-600">—</span>
+                                  )}
+                                </td>
+                              )}
                               <td className="px-3 py-1.5 font-mono text-stone-400">
                                 {item.toyNumber || "—"}
                               </td>
