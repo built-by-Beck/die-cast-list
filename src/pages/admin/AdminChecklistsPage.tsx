@@ -12,11 +12,12 @@ import {
 } from "firebase/firestore";
 import type { MasterChecklist, Brand, ChecklistCategory } from "../../types";
 import { BRANDS, CHECKLIST_CATEGORIES } from "../../types";
-import { parseChecklistCsv, parseChecklistMediaWiki, parseChecklistHtml } from "../../lib/parseChecklist";
+import { parseChecklistMediaWiki, parseChecklistHtml } from "../../lib/parseChecklist";
 import type { ParseCSVResult } from "../../lib/parseChecklist";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import { ConfirmModal } from "../../components/ui/Modal";
+import ImportCarsModal from "../../components/admin/ImportCarsModal";
 import { db, functions, httpsCallable } from "../../lib/firebase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAllMasterChecklists } from "../../hooks/useChecklistsFirestore";
@@ -37,14 +38,10 @@ export default function AdminChecklistsPage() {
     description: "",
   });
 
-  // CSV Import state
+  // Import modal target
   const [importTarget, setImportTarget] = useState<MasterChecklist | null>(
     null,
   );
-  const [csvText, setCsvText] = useState("");
-  const [parseResult, setParseResult] = useState<ParseCSVResult | null>(null);
-  const [importDone, setImportDone] = useState(false);
-  const [sourceMode, setSourceMode] = useState<"csv" | "wiki" | "html">("csv");
   const [quickSourceMode, setQuickSourceMode] = useState<"wiki" | "html">("wiki");
   const [quickImportLoading, setQuickImportLoading] = useState(false);
   const [quickImportError, setQuickImportError] = useState("");
@@ -197,84 +194,6 @@ export default function AdminChecklistsPage() {
 
   const openImport = (cl: MasterChecklist) => {
     setImportTarget(cl);
-    setCsvText("");
-    setParseResult(null);
-    setImportDone(false);
-  };
-
-  const handleParse = () => {
-    if (!csvText.trim()) return;
-    setParseResult(
-      sourceMode === "csv"
-        ? parseChecklistCsv(csvText)
-        : sourceMode === "wiki"
-          ? parseChecklistMediaWiki(csvText)
-          : parseChecklistHtml(csvText),
-    );
-  };
-
-  const handleImport = async () => {
-    if (!importTarget || !parseResult || parseResult.items.length === 0) return;
-
-    const checklistRef = doc(db, "checklists", importTarget.id);
-    const itemsCol = collection(db, "checklists", importTarget.id, "items");
-
-    const seriesSet = new Set<string>();
-    (importTarget.uniqueSeries ?? []).forEach((s) => seriesSet.add(s));
-
-    let batch = writeBatch(db);
-    let ops = 0;
-
-    const flush = async () => {
-      if (ops === 0) return;
-      await batch.commit();
-      batch = writeBatch(db);
-      ops = 0;
-    };
-
-    for (const norm of parseResult.items) {
-      const itemRef = doc(
-        itemsCol,
-        buildStableItemId(
-          importTarget,
-          norm.toyNumber,
-          norm.collectorNumber,
-          norm.modelName,
-          norm.variationLabel,
-        ),
-      );
-      batch.set(
-        itemRef,
-        {
-          ...normalizedToMasterItem(itemRef.id, norm),
-          brandId:
-            importTarget.brandId ??
-            importTarget.brand.toLowerCase().replace(/\s+/g, "-"),
-          year: importTarget.year,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-      if (norm.seriesName) seriesSet.add(norm.seriesName);
-      ops++;
-      if (ops >= 450) await flush();
-    }
-
-    if (ops > 0) await flush();
-
-    const updatedItems = await getDocs(itemsCol);
-    await updateDoc(checklistRef, {
-      brandId:
-        importTarget.brandId ??
-        importTarget.brand.toLowerCase().replace(/\s+/g, "-"),
-      brandName: importTarget.brandName ?? importTarget.brand,
-      totalCars: updatedItems.size,
-      uniqueSeries: [...seriesSet],
-      updatedAt: serverTimestamp(),
-    });
-
-    setImportDone(true);
   };
 
   const importParsedItems = async (
@@ -633,7 +552,7 @@ export default function AdminChecklistsPage() {
                     onClick={() => openImport(cl)}
                     className="px-3 py-2 rounded-xl text-xs font-semibold bg-stone-700 hover:bg-amber-600 hover:text-stone-900 text-stone-300 transition-all"
                   >
-                    📄 CSV
+                    ⬆️ Import Cars
                   </button>
                   <button
                     onClick={() => togglePublish(cl.id)}
@@ -765,240 +684,12 @@ export default function AdminChecklistsPage() {
         </form>
       </Modal>
 
-      {/* CSV Import modal */}
-      <Modal
+      {/* Import Cars modal */}
+      <ImportCarsModal
+        checklist={importTarget}
         isOpen={Boolean(importTarget)}
-        onClose={() => {
-          setImportTarget(null);
-          setParseResult(null);
-        }}
-        title={`Import CSV — ${importTarget?.name ?? ""}`}
-        size="lg"
-      >
-        {importDone ? (
-          <div className="text-center py-6">
-            <div className="text-5xl mb-3">✅</div>
-            <p className="text-stone-200 font-semibold text-lg mb-1">
-              {parseResult?.items.length ?? 0} items imported!
-            </p>
-            <p className="text-stone-500 text-sm mb-6">
-              Items have been added to{" "}
-              <strong className="text-stone-300">{importTarget?.name}</strong>.
-            </p>
-            <Button
-              onClick={() => {
-                setImportTarget(null);
-                setParseResult(null);
-              }}
-            >
-              Done
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Instructions */}
-            <div className="bg-stone-900 border border-stone-700 rounded-xl p-4 text-xs text-stone-400 leading-relaxed">
-              <p className="font-semibold text-stone-300 mb-1">Import source</p>
-              <div className="mb-2 flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setSourceMode("csv")}
-                  className={`rounded-lg px-2 py-1 ${sourceMode === "csv" ? "bg-amber-500 text-stone-900" : "bg-stone-800 text-stone-400"}`}
-                >
-                  CSV
-                </button>
-                <button
-                  onClick={() => setSourceMode("wiki")}
-                  className={`rounded-lg px-2 py-1 ${sourceMode === "wiki" ? "bg-amber-500 text-stone-900" : "bg-stone-800 text-stone-400"}`}
-                >
-                  MediaWiki
-                </button>
-                <button
-                  onClick={() => setSourceMode("html")}
-                  className={`rounded-lg px-2 py-1 ${sourceMode === "html" ? "bg-amber-500 text-stone-900" : "bg-stone-800 text-stone-400"}`}
-                >
-                  HTML Source
-                </button>
-              </div>
-              {sourceMode === "html" && (
-                <p className="text-xs text-stone-400 mb-1">
-                  On hotwheels.fandom.com, press <kbd className="bg-stone-700 px-1 rounded">Ctrl+U</kbd> to view page source, then <kbd className="bg-stone-700 px-1 rounded">Ctrl+A</kbd> + <kbd className="bg-stone-700 px-1 rounded">Ctrl+C</kbd> to copy, then paste below. Images will be captured.
-                </p>
-              )}
-              <p className="font-semibold text-stone-300 mb-1">
-                Expected columns:
-              </p>
-              <code className="text-amber-400">
-                Toy #, Col.#, Model Name, Series, Series #, Photo
-              </code>
-              <p className="mt-2">
-                Supports wiki markup and template tags such as{" "}
-                <code className="text-stone-300">{"{{TH}}"}</code>,{" "}
-                <code className="text-stone-300">{"{{STH}}"}</code>,{" "}
-                <code className="text-stone-300">{"[[link|text]]"}</code>.
-              </p>
-            </div>
-
-            {/* Textarea */}
-            {!parseResult && (
-              <>
-                <div>
-                  <label className="block text-sm font-semibold text-stone-300 mb-1.5">
-                    {sourceMode === "csv" ? "Paste CSV data" : sourceMode === "wiki" ? "Paste MediaWiki source" : "Paste HTML page source"}
-                  </label>
-                  <textarea
-                    aria-label="Paste import source"
-                    rows={8}
-                    value={csvText}
-                    onChange={(e) => setCsvText(e.target.value)}
-                    placeholder={
-                      sourceMode === "csv"
-                        ? 'Toy #,Col.#,Model Name,Series,Series #,Photo\n001,1/250,"\'69 Camaro Z/28",HW Dream Garage,1/4,File:camaro.jpg'
-                        : sourceMode === "wiki"
-                          ? '{| class="wikitable"\n|-\n! Toy # !! Col.# !! Model Name !! Series !! Series # !! Photo\n|-\n| 001 || 1/250 || \'69 Camaro Z/28 || HW Dream Garage || 1/4 || [[File:camaro.jpg]]'
-                          : "Paste the full HTML page source here (Ctrl+U → Ctrl+A → Ctrl+C from hotwheels.fandom.com)"
-                    }
-                    className="w-full bg-stone-900 border border-stone-600 text-stone-100 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-amber-500 placeholder-stone-700 resize-none"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    variant="ghost"
-                    fullWidth
-                    onClick={() => {
-                      setImportTarget(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    fullWidth
-                    onClick={handleParse}
-                    disabled={!csvText.trim()}
-                  >
-                    {sourceMode === "csv" ? "Parse CSV" : sourceMode === "wiki" ? "Parse Wiki Source" : "Parse HTML Source"}
-                  </Button>
-                </div>
-              </>
-            )}
-
-            {/* Parse results */}
-            {parseResult && (
-              <>
-                {/* Summary */}
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center">
-                    <div className="text-2xl font-black text-green-400">
-                      {parseResult.items.length}
-                    </div>
-                    <div className="text-xs text-stone-400">valid rows</div>
-                  </div>
-                  {parseResult.errors.length > 0 && (
-                    <div className="flex-1 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-                      <div className="text-2xl font-black text-red-400">
-                        {parseResult.errors.length}
-                      </div>
-                      <div className="text-xs text-stone-400">errors</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Errors */}
-                {parseResult.errors.length > 0 && (
-                  <div className="bg-red-900/20 border border-red-700/40 rounded-xl p-3 max-h-24 overflow-y-auto">
-                    {parseResult.errors.map((err) => (
-                      <p key={err.row} className="text-red-400 text-xs">
-                        {err.message}
-                      </p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Preview table */}
-                {parseResult.items.length > 0 && (
-                  <div className="bg-stone-900 border border-stone-700 rounded-xl overflow-hidden">
-                    <p className="text-xs text-stone-500 px-3 py-2 border-b border-stone-700">
-                      Preview (first {Math.min(5, parseResult.items.length)} of{" "}
-                      {parseResult.items.length} rows)
-                    </p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs min-w-[400px]">
-                        <thead>
-                          <tr className="text-stone-500 text-left border-b border-stone-700">
-                            {sourceMode === "html" && <th className="px-3 py-2">Photo</th>}
-                            <th className="px-3 py-2">Toy #</th>
-                            <th className="px-3 py-2">Col.#</th>
-                            <th className="px-3 py-2">Model Name</th>
-                            <th className="px-3 py-2">Series</th>
-                            <th className="px-3 py-2">Ser.#</th>
-                            <th className="px-3 py-2">Rarity</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {parseResult.items.slice(0, 5).map((item, i) => (
-                            <tr
-                              key={i}
-                              className="border-b border-stone-800 hover:bg-stone-800/50"
-                            >
-                              {sourceMode === "html" && (
-                                <td className="px-3 py-1.5">
-                                  {item.photoUrl ? (
-                                    <img
-                                      src={item.photoUrl}
-                                      alt={item.modelName}
-                                      className="h-8 w-12 object-contain rounded"
-                                    />
-                                  ) : (
-                                    <span className="text-stone-600">—</span>
-                                  )}
-                                </td>
-                              )}
-                              <td className="px-3 py-1.5 font-mono text-stone-400">
-                                {item.toyNumber || "—"}
-                              </td>
-                              <td className="px-3 py-1.5 font-mono text-stone-500">
-                                {item.collectorNumber || "—"}
-                              </td>
-                              <td className="px-3 py-1.5 text-stone-200 font-medium">
-                                {item.modelName}
-                              </td>
-                              <td className="px-3 py-1.5 text-stone-400">
-                                {item.seriesName}
-                              </td>
-                              <td className="px-3 py-1.5 font-mono text-stone-500">
-                                {item.seriesNumber || "—"}
-                              </td>
-                              <td className="px-3 py-1.5 text-stone-400">
-                                {item.rarityType}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button
-                    variant="secondary"
-                    fullWidth
-                    onClick={() => setParseResult(null)}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    fullWidth
-                    onClick={handleImport}
-                    disabled={parseResult.items.length === 0}
-                  >
-                    Import {parseResult.items.length} Items
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
+        onClose={() => setImportTarget(null)}
+      />
 
       {/* Delete confirm */}
       <ConfirmModal

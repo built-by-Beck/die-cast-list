@@ -36,5 +36,10 @@ export function normalizedToMasterItem(
     notes: n.notes,
     sortOrder: n.sortOrder,
     normalizedSearchText: n.normalizedSearchText,
+    tags: n.tags ?? [],
+    isTreasureHunt: n.isTreasureHunt ?? false,
+    isSuperTreasureHunt: n.isSuperTreasureHunt ?? false,
+    isExclusive: n.isExclusive ?? false,
+    exclusiveStore: n.exclusiveStore ?? null,
   };
 }

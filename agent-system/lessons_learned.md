@@ -52,3 +52,15 @@ These are architectural guardrails for this project — treat them as lessons al
 
 **Prevention rule:** When removing demo data, map every former mock consumer to a real collection path (or intentional empty UI) before deleting the fixture file.
 
+## 2026-06-16 - Remove dead JSX cleanly; don't gate with `{false && ...}`
+
+**What happened:** While replacing the legacy CSV import modal, an intermediate edit wrapped the old block in `{false && (<Modal>...)}` instead of deleting it. The dead block still referenced state/handlers that had been removed (`importDone`, `parseResult`, `csvText`, `sourceMode`, `handleParse`, `handleImport`), which would have failed `tsc`.
+
+**Impact:** Caught before any build/commit; no shipped breakage. Wasted one edit cycle.
+
+**Root cause:** Tried to "disable" a large block quickly rather than removing it in one clean StrReplace.
+
+**Fix used:** Replaced the entire legacy block (open `{/* CSV Import modal */}` through its closing `</Modal>`) with nothing, leaving only the new `<ImportCarsModal />` usage.
+
+**Prevention rule:** When superseding a component, delete the old block entirely in one edit. Never leave `{false && ...}`-gated JSX that references deleted state — TypeScript still type-checks it.
+

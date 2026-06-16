@@ -79,6 +79,12 @@ export interface NormalizedChecklistItem {
   notes: string;
   sortOrder: number;
   normalizedSearchText: string;
+  // Auto-detected import metadata (optional, backward-compatible).
+  tags?: string[];
+  isTreasureHunt?: boolean;
+  isSuperTreasureHunt?: boolean;
+  isExclusive?: boolean;
+  exclusiveStore?: string | null;
 }
 
 const CSV_FIELD_ALIASES: Record<string, keyof NormalizedChecklistItem> = {

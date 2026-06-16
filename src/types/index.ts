@@ -284,6 +284,12 @@ export interface MasterChecklistItem {
   notes: string;
   sortOrder: number;
   normalizedSearchText: string;
+  // Auto-detected import metadata (optional, backward-compatible).
+  tags?: string[];
+  isTreasureHunt?: boolean;
+  isSuperTreasureHunt?: boolean;
+  isExclusive?: boolean;
+  exclusiveStore?: string | null;
   createdAt: unknown;
   updatedAt: unknown;
 }

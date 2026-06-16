@@ -509,3 +509,66 @@ ACCEPTED WITH MINOR CONCERNS
 3. Admin: Use "✨ AI Import from URL" on AdminChecklistsPage to seed initial checklists (2025 HW Mainline, 2024 HW Mainline, etc.), then publish them.
 4. Test AI chat as a Pro user.
 
+---
+
+## 2026-06-16 - Full ship-readiness review (PBRD Review)
+
+**Classification:** LARGE (review only, no code changes)
+**Task:** "Do a full review and see what else we need to get this ready to ship."
+
+**Validation run:**
+- `npm run typecheck` (root) — PASS
+- `npm run build` (root, tsc && vite build) — PASS (warns: 829KB JS bundle; plan PNGs ~1.8MB each)
+- `functions/` `npm run build` — PASS
+- `functions/ai/` `npm run build` — PASS (3.5s) AFTER running `npm install` there. Root cause of earlier "hang": `functions/ai/node_modules` was missing, so `npx tsc` blocked fetching TypeScript. Deps now installed; build is clean.
+
+**Ship blockers found (advertised but not implemented):**
+1. PublicShowcasePage + PublicProfilePage are Phase-5 stubs — always show private/not-found. Routes `/showcase/:userId` and `/p/:slug` non-functional; "Public View" button leads to dead stub.
+2. Photo upload not implemented (AddEditCarPage + ProfilePage "Phase 4" placeholders). Storage initialized but unused; `primaryPhotoUrl` never populated. Landing advertises photos on paid plans.
+3. ProfilePage.handleSubmit only console.logs (no Firestore write) — displayName/bio/publicProfileEnabled never persist.
+4. SettingsPage.handleSave is fake (no persistence) — simpleChecklistMode not saved.
+5. firestore.rules has NO public-read path for `usr/{uid}/cars` (publicVisible) or `users/{uid}` profile — public showcase will hit permission errors once built. Must scope to publicVisible + publicProfileEnabled.
+
+**Consistency / docs:**
+- Plan mismatch: CLAUDE.md/AGENTS.md say Basic=250 cars/$5, Premium=unlimited/$20. Code+landing say Basic=10 cars/$7, Premium=5,000/$22. Docs stale — pick source of truth.
+- Account deletion is manual ("contact support"); no self-serve deletion + subcollection cleanup.
+
+**Polish:** large image assets/bundle; AdminDashboard has no user listing; `lint` is just typecheck (no ESLint); no automated tests.
+
+**Review Verdict:** REVISION REQUIRED (not ship-ready — core advertised features are stubs)
+
+**Next Recommended Action:** Decide scope — either build the 5 blockers (showcase/profile public pages, photo upload, profile+settings persistence, public-read rules) or descope/relabel those features before launch.
+
+---
+
+## 2026-06-16 - Beginner-friendly "Import Cars" workflow (PBRD LARGE)
+
+**Classification:** LARGE (new parser, item schema additions, redesigned admin import workflow, new admin cloud function).
+
+**Task:** Replace admin "Import CSV" with a non-technical "Import Cars" flow: Paste-from-Fandom (default), Fandom URL Import, and Advanced (CSV/MediaWiki/HTML), with auto-tagging, preview, inline edit, and duplicate detection.
+
+**Summary:**
+- Extended `MasterChecklistItem` + `NormalizedChecklistItem` with OPTIONAL fields: `tags`, `isTreasureHunt`, `isSuperTreasureHunt`, `isExclusive`, `exclusiveStore` (backward-compatible, no migration).
+- New `src/lib/parseFandomPaste.ts`: `parseFandomPaste()` (toy-number token `^[A-Z]{2,4}\d{2,4}$` starts each row; tolerant of tabs/newlines/extra label cells), `detectFandomTags()` (TH/STH/New-for-YEAR/store exclusives/Red Edition/Zamac/Ryu's Rides; bare TH/STH matched case-sensitively to avoid "5th"), `enrichWithTags()`/`enrichItemsWithTags()` for the existing parsers, `computeImportStats()`.
+- `normalizedToMasterItem()` now persists the 5 new fields with safe defaults (never `undefined`).
+- New `src/components/admin/ImportCarsModal.tsx`: 3 method tabs converging on one preview (stat cards, editable row cards, dedupe radios skip/update/import-anyway, plain-language messages only — no raw parser errors). Dedupe compares against existing item IDs via `buildStableItemId`.
+- `AdminChecklistsPage`: removed legacy inline CSV modal + its state/handlers; per-checklist button relabeled "⬆️ Import Cars" opens the new modal. Quick Import + AI URL sections left intact.
+- New admin-only callable `fetchFandomChecklistHtml` in `functions/ai/src/index.ts`: fetches Fandom `api.php?action=parse&prop=text` server-side (bypasses CORS), returns rendered HTML for client-side parse/preview; no Firestore write.
+
+**Files Changed:**
+- `src/types/index.ts`, `src/lib/parseChecklist.ts`, `src/lib/parseFandomPaste.ts` (NEW), `src/lib/firestoreConverters.ts`, `src/components/admin/ImportCarsModal.tsx` (NEW), `src/pages/admin/AdminChecklistsPage.tsx`, `functions/ai/src/index.ts`
+
+**Validation:**
+- `npm run typecheck` (root) — PASS
+- `npm run build` (root, tsc && vite build) — PASS (pre-existing 838KB bundle + plan PNG warnings only)
+- `functions/ai` `npm run build` — PASS
+
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS
+
+**Risks / Blockers:**
+- `fetchFandomChecklistHtml` requires `role: 'admin'` and a redeploy: `firebase deploy --only functions:ai`. URL import tab shows a friendly fallback until deployed.
+- Quick Import path still writes items without auto-tags (only the new Import Cars flow enriches tags); acceptable, out of scope.
+- Dedupe key uses `buildStableItemId` (brand+year+col+toy+model+variant) scoped to the target checklist's items — satisfies the toyNumber+collectorNumber+modelName+checklistId requirement.
+
+**Next Recommended Action:** Deploy `functions:ai`, then test as an admin: paste a real Fandom table, verify counts/tags/dedupe, and confirm member checklist tracking is unaffected.
+

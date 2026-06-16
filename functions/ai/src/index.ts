@@ -411,6 +411,79 @@ export const importChecklistAdmin = onCall(
   },
 );
 
+// ─── fetchFandomChecklistHtml (admin-only, returns rendered HTML, no write) ───
+// Safely fetches a Fandom list page server-side (bypassing browser CORS) and
+// returns the rendered HTML so the admin client can parse + preview it through
+// the same import flow as a manual paste. This function never writes to
+// Firestore — the client decides what to import after reviewing the preview.
+
+export const fetchFandomChecklistHtml = onCall(
+  {
+    region: functionsRegion,
+    timeoutSeconds: 120,
+    memory: "256MiB",
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Must be signed in.");
+    }
+    await assertAdmin(request.auth.uid);
+
+    const { url } = (request.data ?? {}) as { url?: string };
+    if (!url?.trim()) {
+      throw new HttpsError("invalid-argument", "url is required.");
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url.trim());
+    } catch {
+      throw new HttpsError("invalid-argument", "That doesn't look like a valid web address.");
+    }
+    if (!/\.fandom\.com$/i.test(parsed.hostname) && !/\.wikia\.\w+$/i.test(parsed.hostname)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Please paste a Hot Wheels Fandom (fandom.com) list page link.",
+      );
+    }
+
+    const domain = parsed.hostname;
+    const pageName = decodeURIComponent(
+      parsed.pathname.replace(/^\/wiki\//, ""),
+    );
+    if (!pageName) {
+      throw new HttpsError("invalid-argument", "The link is missing a page name.");
+    }
+
+    const apiUrl = `https://${domain}/api.php?action=parse&page=${encodeURIComponent(pageName)}&prop=text&format=json`;
+
+    let html: string;
+    let title = pageName;
+    try {
+      const resp = await fetch(apiUrl, {
+        headers: { "User-Agent": "DiecastVault/1.0 (https://diecastvault.app)" },
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const json = (await resp.json()) as {
+        parse?: { title?: string; text?: { "*": string } };
+        error?: { info: string };
+      };
+      if (json.error) throw new Error(json.error.info);
+      html = json.parse?.text?.["*"] ?? "";
+      title = json.parse?.title ?? pageName;
+      if (!html) throw new Error("Empty page");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new HttpsError("unavailable", `Could not read that page: ${msg}`);
+    }
+
+    const MAX_CHARS = 1_200_000;
+    if (html.length > MAX_CHARS) html = html.slice(0, MAX_CHARS);
+
+    return { html, sourceUrl: url.trim(), title };
+  },
+);
+
 // ─── askAI (Pro-only conversational assistant) ────────────────────────────────
 
 const IntentSchema = z.object({
