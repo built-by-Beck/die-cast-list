@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import basicPlanImage from '../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../media/die-cast-vault-pro.png';
+import heroImage from '../../media/keith-diecast-hero.png';
 
 const FEATURES = [
   { icon: '✅', title: 'Master Checklists', desc: 'Browse complete set lists and check off what you own. Free for everyone.' },
@@ -32,28 +33,84 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="text-center px-6 py-20 max-w-4xl mx-auto">
-        <div className="text-6xl mb-6">🏎️</div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-stone-50 mb-6 leading-tight">
-          Your Diecast Collection,
-          <span className="text-amber-500"> Perfectly Organized</span>
-        </h1>
-        <p className="text-xl text-stone-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Die Cast Vault helps diecast collectors track complete set checklists,
-          inventory their cars, show off their best finds, and never accidentally buy
-          the same car twice.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="xl" onClick={() => navigate('/login')}>
-            Get Started Free
-          </Button>
-          <Button size="xl" variant="secondary" onClick={() => navigate('/login')}>
-            Sign In
-          </Button>
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-stone-900 via-stone-900 to-stone-800"
+          aria-hidden
+        />
+        <div
+          className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-amber-500/5 to-transparent pointer-events-none"
+          aria-hidden
+        />
+
+        <div className="relative max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-24">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="text-center lg:text-left order-2 lg:order-1">
+              <p className="inline-flex items-center gap-2 text-amber-400/90 text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-4">
+                <span className="h-px w-8 bg-amber-500/60 hidden sm:block" />
+                Built for a serious collector
+                <span className="h-px w-8 bg-amber-500/60 hidden sm:block" />
+              </p>
+
+              <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black leading-tight mb-5">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500">
+                  Keith&apos;s Die Cast List
+                </span>
+              </h2>
+
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-stone-50 mb-6 leading-tight">
+                Your Diecast Collection,
+                <span className="text-amber-500"> Perfectly Organized</span>
+              </h1>
+
+              <p className="text-lg sm:text-xl text-stone-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">
+                Track complete set checklists, inventory every car, show off your best
+                finds, and never accidentally buy the same one twice.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button size="xl" onClick={() => navigate('/login')}>
+                  Get Started Free
+                </Button>
+                <Button size="xl" variant="secondary" onClick={() => navigate('/login')}>
+                  Sign In
+                </Button>
+              </div>
+              <p className="text-stone-500 text-sm mt-5">
+                Free checklist access · Full inventory from{' '}
+                <strong className="text-stone-400">$7/month</strong>
+              </p>
+            </div>
+
+            <div className="relative order-1 lg:order-2">
+              <div
+                className="absolute -inset-6 bg-amber-500/15 blur-3xl rounded-full"
+                aria-hidden
+              />
+              <div className="relative rounded-2xl overflow-hidden border border-stone-700/80 shadow-2xl shadow-amber-950/40 ring-1 ring-amber-500/20">
+                <img
+                  src={heroImage}
+                  alt="Premium diecast cars displayed on collector shelves"
+                  className="w-full aspect-[16/10] object-cover"
+                />
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent"
+                  aria-hidden
+                />
+                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                  <div className="bg-stone-900/80 backdrop-blur-sm border border-stone-600/50 rounded-xl px-4 py-2.5">
+                    <p className="text-amber-400 text-xs font-bold uppercase tracking-wider">
+                      Keith&apos;s Collection
+                    </p>
+                    <p className="text-stone-200 text-sm font-semibold">
+                      Hot Wheels · Matchbox · More
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="text-stone-500 text-sm mt-5">
-          Free checklist access · Full inventory from <strong className="text-stone-400">$7/month</strong>
-        </p>
       </section>
 
       {/* Brands strip */}
