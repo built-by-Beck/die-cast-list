@@ -124,7 +124,7 @@ async function importFromWikiUrl(
   let wikitext: string;
   try {
     const resp = await fetch(apiUrl, {
-      headers: { "User-Agent": "DiecastVault/1.0 (https://diecastvault.app)" },
+      headers: { "User-Agent": "DieCastList/1.0 (https://diecastlist.com)" },
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = (await resp.json()) as {
@@ -461,7 +461,7 @@ export const fetchFandomChecklistHtml = onCall(
     let title = pageName;
     try {
       const resp = await fetch(apiUrl, {
-        headers: { "User-Agent": "DiecastVault/1.0 (https://diecastvault.app)" },
+        headers: { "User-Agent": "DieCastList/1.0 (https://diecastlist.com)" },
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const json = (await resp.json()) as {
@@ -646,7 +646,7 @@ If intent is find_list, also extract:
 
     const { output: replyOutput } = await ai.generate({
       model: googleAI.model("gemini-2.0-flash"),
-      prompt: `You are a friendly AI assistant inside Die Cast Vault, a diecast car collection tracker for Hot Wheels, Matchbox, and similar collectors.
+      prompt: `You are a friendly AI assistant inside Die Cast List (diecastlist.com), a diecast car collection tracker for Hot Wheels, Matchbox, and similar collectors.
 
 User plan: ${planContext}
 User's tracked lists: ${trackedCount}

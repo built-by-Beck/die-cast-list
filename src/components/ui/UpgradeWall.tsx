@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import basicPlanImage from '../../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../../media/die-cast-vault-pro.png';
+import { SUPPORT_EMAIL } from '../../lib/site';
 import { formatCheckoutError, startStripeCheckout } from '../../lib/billing';
 import { firebaseApp } from '../../lib/firebase';
 
@@ -101,7 +102,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
         Your plan updates automatically after checkout when webhooks are configured.
         <br />
         Already paid?{' '}
-        <a href="mailto:support@diecastvault.app" className="text-amber-500 hover:underline">
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-amber-500 hover:underline">
           Contact support
         </a>
         .

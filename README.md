@@ -2,6 +2,8 @@
 
 Diecast collection tracker (React + Vite + Firebase + Stripe).
 
+**Production site:** [https://diecastlist.com](https://diecastlist.com)
+
 ## Scripts
 
 - `npm run dev` — Vite dev server
@@ -19,7 +21,7 @@ Paid plans use **Stripe Checkout** via the callable function `createCheckoutSess
 
 2. **Functions parameters** (non-secrets) — set named parameters used by the code:
 
-   - `PUBLIC_APP_URL` — HTTPS origin of the hosted app (success/cancel URLs), no trailing slash  
+   - `PUBLIC_APP_URL` — HTTPS origin of the hosted app (success/cancel URLs), no trailing slash — use `https://diecastlist.com`
    - `STRIPE_PRICE_BASIC_ID` — Stripe recurring price ID for Basic  
    - `STRIPE_PRICE_PRO_ID` — Stripe recurring price ID for Pro  
 

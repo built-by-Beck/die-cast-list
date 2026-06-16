@@ -2,7 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import basicPlanImage from '../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../media/die-cast-vault-pro.png';
-import heroImage from '../../media/keith-diecast-hero.png';
+import heroImage from '../../media/diecastlist.png';
+import collectorShelfImage from '../../media/keith-diecast-hero.png';
+import { SITE_NAME, SITE_URL } from '../lib/site';
 
 const FEATURES = [
   { icon: '✅', title: 'Master Checklists', desc: 'Browse complete set lists and check off what you own. Free for everyone.' },
@@ -26,7 +28,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-stone-900 text-stone-100">
       {/* Header */}
       <header className="border-b border-stone-800 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
-        <div className="text-2xl font-bold text-amber-500">🏎️ Die Cast Vault</div>
+        <div className="text-2xl font-bold text-amber-500">
+          🏎️ Die Cast List
+        </div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
           Sign In
         </Button>
@@ -90,23 +94,13 @@ export default function LandingPage() {
               <div className="relative rounded-2xl overflow-hidden border border-stone-700/80 shadow-2xl shadow-amber-950/40 ring-1 ring-amber-500/20">
                 <img
                   src={heroImage}
-                  alt="Premium diecast cars displayed on collector shelves"
-                  className="w-full aspect-[16/10] object-cover"
+                  alt="Keith's Die Cast List — diecast collection showcase"
+                  className="w-full aspect-[16/10] object-cover object-center"
                 />
                 <div
-                  className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent"
+                  className="absolute inset-0 bg-gradient-to-t from-stone-900/40 via-transparent to-transparent"
                   aria-hidden
                 />
-                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                  <div className="bg-stone-900/80 backdrop-blur-sm border border-stone-600/50 rounded-xl px-4 py-2.5">
-                    <p className="text-amber-400 text-xs font-bold uppercase tracking-wider">
-                      Keith&apos;s Collection
-                    </p>
-                    <p className="text-stone-200 text-sm font-semibold">
-                      Hot Wheels · Matchbox · More
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -219,10 +213,19 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="text-center px-6 py-20 border-t border-stone-800">
+      <section className="relative overflow-hidden border-t border-stone-800">
+        <div className="absolute inset-0" aria-hidden>
+          <img
+            src={collectorShelfImage}
+            alt=""
+            className="h-full w-full object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-stone-900/85" />
+        </div>
+        <div className="relative text-center px-6 py-20 max-w-3xl mx-auto">
         <h2 className="text-3xl font-bold text-stone-50 mb-4">Ready to organize your collection?</h2>
         <p className="text-stone-400 mb-2 text-lg">
-          Join collectors who track their diecast collection with Die Cast Vault.
+          Join collectors who track their diecast collection with {SITE_NAME}.
         </p>
         <p className="text-stone-500 text-sm mb-8">
           Start free · No credit card required for checklist access
@@ -230,11 +233,12 @@ export default function LandingPage() {
         <Button size="xl" onClick={() => navigate('/login')}>
           Get Started
         </Button>
+        </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-stone-800 text-center py-8 text-stone-600 text-sm">
-        <p>© 2026 Die Cast Vault. Built for diecast collectors.</p>
+        <p>© 2026 Die Cast List · {SITE_URL.replace('https://', '')}</p>
         <p className="mt-1 text-xs text-stone-700">
           Not affiliated with Hot Wheels, Matchbox, or any diecast brand.
           All brand names are trademarks of their respective owners.

@@ -1,5 +1,7 @@
-import { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { SITE_NAME } from '../../lib/site';
 import { useNavigate, Link } from 'react-router-dom';
+import collectorShelfImage from '../../../media/keith-diecast-hero.png';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -140,7 +142,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-stone-900 flex items-center justify-center px-4">
         <div className="bg-stone-800 border border-stone-700 rounded-2xl p-8 w-full max-w-sm text-center">
           <div className="text-5xl mb-4">🏎️</div>
-          <h1 className="text-2xl font-bold text-stone-50 mb-2">Die Cast Vault</h1>
+          <h1 className="text-2xl font-bold text-stone-50 mb-2">{SITE_NAME}</h1>
           <p className="text-stone-400 text-sm mb-6 leading-relaxed">
             Firebase is not configured. Add your <code className="font-mono text-amber-400">VITE_FIREBASE_*</code>{' '}
             variables to a <code className="font-mono text-amber-400">.env</code> file so you can sign in and load your real collection.
@@ -172,13 +174,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-stone-900 flex flex-col lg:flex-row">
+      {/* Collector showcase — desktop side panel, mobile banner */}
+      <div className="relative lg:w-[45%] xl:w-1/2 min-h-[220px] sm:min-h-[280px] lg:min-h-screen shrink-0">
+        <img
+          src={collectorShelfImage}
+          alt="Premium diecast cars on collector shelves"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-stone-900 via-stone-900/70 to-stone-900/20" />
+        <div className="relative z-10 flex h-full flex-col justify-end p-6 sm:p-10 lg:p-12">
+          <p className="text-amber-400 text-xs font-bold uppercase tracking-[0.2em] mb-2">
+            Keith&apos;s Collection
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-black text-stone-50 leading-tight max-w-md">
+            Every car. Every checklist. One place.
+          </h2>
+          <p className="text-stone-300 text-sm sm:text-base mt-3 max-w-sm leading-relaxed">
+            Sign in to track your lists, inventory your finds, and build your showcase.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-1 items-center justify-center px-4 py-10 lg:py-12">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <div className="text-5xl mb-3">🏎️</div>
-            <div className="text-2xl font-bold text-amber-500">Die Cast Vault</div>
+            <div className="text-2xl font-bold text-amber-500">{SITE_NAME}</div>
           </Link>
           <p className="text-stone-400 mt-2">
             {mode === 'signin' ? 'Welcome back, collector!' : 'Start your vault today.'}
@@ -333,6 +356,7 @@ export default function LoginPage() {
             ← Back to home
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );

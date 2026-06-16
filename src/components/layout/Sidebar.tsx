@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
+import { SITE_NAME } from '../../lib/site';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface NavItem {
@@ -38,7 +39,7 @@ export default function Sidebar() {
       <div className="p-6 border-b border-stone-700">
         <NavLink to="/dashboard" className="block">
           <div className="text-2xl font-bold text-amber-500 leading-tight">
-            🏎️ Die Cast Vault
+            🏎️ {SITE_NAME}
           </div>
         </NavLink>
         {userDoc && (
