@@ -1,4 +1,4 @@
-# Die Cast Vault
+# Die Cast List
 
 Diecast collection tracker (React + Vite + Firebase + Stripe).
 
