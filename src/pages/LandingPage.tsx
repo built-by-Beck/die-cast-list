@@ -154,7 +154,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth variant="secondary" onClick={() => navigate('/login')}>
+            <Button className="mt-8" fullWidth variant="secondary" onClick={() => navigate('/login?mode=register')}>
               Start Free
             </Button>
           </div>
@@ -178,7 +178,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth onClick={() => navigate('/login')}>
+            <Button className="mt-8" fullWidth onClick={() => navigate('/login?mode=register&plan=basic')}>
               Get Basic
             </Button>
           </div>
@@ -205,7 +205,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth onClick={() => navigate('/login')}>
+            <Button className="mt-8" fullWidth onClick={() => navigate('/login?mode=register&plan=premium')}>
               Get Pro
             </Button>
           </div>

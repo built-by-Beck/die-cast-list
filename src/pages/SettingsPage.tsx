@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getEffectivePlan, getPlanLimits } from '../lib/access';
 import Button from '../components/ui/Button';
+import PlanImageCard from '../components/ui/PlanImageCard';
 import basicPlanImage from '../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../media/die-cast-vault-pro.png';
 import { formatCheckoutError, startStripeCheckout } from '../lib/billing';
@@ -50,7 +51,7 @@ export default function SettingsPage() {
     : 'No active plan';
 
   return (
-    <div className="page-container max-w-2xl">
+    <div className="page-container max-w-3xl">
       <h1 className="page-title">Settings</h1>
 
       {success && (
@@ -83,16 +84,18 @@ export default function SettingsPage() {
       {/* Plan limits */}
       <section className="bg-stone-800 border border-stone-700 rounded-2xl p-6 mb-5">
         <h2 className="section-title">Your Plan Limits</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <img
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+          <PlanImageCard
             src={basicPlanImage}
             alt="Die Cast Vault Basic plan"
-            className="w-full h-20 object-cover rounded-xl border border-stone-700"
+            label="Basic"
+            highlighted={effectivePlan === 'basic'}
           />
-          <img
+          <PlanImageCard
             src={proPlanImage}
             alt="Die Cast Vault Pro plan"
-            className="w-full h-20 object-cover rounded-xl border border-stone-700"
+            label="Pro"
+            highlighted={effectivePlan === 'premium' || Boolean(userDoc?.lifetimeAccess)}
           />
         </div>
         <div className="space-y-3 text-sm">

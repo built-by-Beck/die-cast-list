@@ -130,14 +130,26 @@ export function stripDetectedLabels(text: string): string {
 
 // ─── Photo cell detection ─────────────────────────────────────────────────────
 
-function findPhotoCell(cells: string[]): string {
+function extractPhotoFromCells(cells: string[]): {
+  photoUrl: string;
+  imageRef: string;
+} {
   for (const cell of cells) {
-    const m = cell.match(/(https?:\/\/\S+\.(?:png|jpe?g|gif|webp)\S*)/i);
-    if (m) return m[1];
-    const file = cell.match(/File:([^\s|\]]+\.(?:png|jpe?g|gif|webp))/i);
-    if (file) return file[1];
+    const http = cell.match(/(https?:\/\/\S+\.(?:png|jpe?g|gif|webp)\S*)/i);
+    if (http) return { photoUrl: http[1], imageRef: "" };
+
+    const file = cell.match(/File:([^\s|\]]+)/i);
+    if (file) {
+      const ref = cleanWikiMarkup(file[1]);
+      return { photoUrl: "", imageRef: ref };
+    }
+
+    const bare = cell.match(
+      /^([A-Za-z0-9_\-%. ]+\.(?:png|jpe?g|gif|webp))$/i,
+    );
+    if (bare) return { photoUrl: "", imageRef: bare[1].trim() };
   }
-  return "";
+  return { photoUrl: "", imageRef: "" };
 }
 
 // ─── Enrichment for items produced by the existing parsers ────────────────────
@@ -224,7 +236,7 @@ export function parseFandomPaste(text: string, year?: number): ParseCSVResult {
     const seriesRaw = cleanWikiMarkup(cells[3] ?? "");
     const series = stripDetectedLabels(seriesRaw);
     const seriesNumber = (cells[4] ?? "").trim();
-    const photo = findPhotoCell(cells);
+    const { photoUrl, imageRef } = extractPhotoFromCells(cells);
 
     if (!modelName) {
       errors.push({
@@ -241,7 +253,8 @@ export function parseFandomPaste(text: string, year?: number): ParseCSVResult {
         "model name": modelName,
         series,
         "series #": seriesNumber,
-        photo,
+        photo: photoUrl,
+        imageRef,
       },
       sortOrder++,
     );

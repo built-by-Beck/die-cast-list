@@ -21,6 +21,7 @@ import {
   computeImportStats,
 } from "../../lib/parseFandomPaste";
 import { normalizedToMasterItem } from "../../lib/firestoreConverters";
+import { resolveChecklistItemPhotoUrl } from "../../lib/checklistItemPhoto";
 import { db, functions, httpsCallable } from "../../lib/firebase";
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
@@ -346,7 +347,7 @@ export default function ImportCarsModal({
       isOpen={isOpen}
       onClose={close}
       title={`Import Cars${checklist ? ` — ${checklist.name}` : ""}`}
-      size="lg"
+      size="xl"
     >
       {phase === "done" ? (
         <div className="text-center py-6">
@@ -420,68 +421,146 @@ export default function ImportCarsModal({
             </div>
           )}
 
-          {/* Editable rows */}
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {rows.map((row, i) => (
-              <div
-                key={i}
-                className="bg-stone-900 border border-stone-700 rounded-xl p-3"
-              >
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <div className="flex flex-wrap gap-1">
-                    {row.isSuperTreasureHunt && (
-                      <Badge color="purple">$TH</Badge>
-                    )}
-                    {row.isTreasureHunt && !row.isSuperTreasureHunt && (
-                      <Badge color="green">TH</Badge>
-                    )}
-                    {row.isExclusive && (
-                      <Badge color="blue">{row.exclusiveStore ?? "Exclusive"}</Badge>
-                    )}
-                    {isDupRow(row) && <Badge color="amber">Already in list</Badge>}
-                    {!row.photoUrl && !row.imageRef && (
-                      <Badge color="stone">No photo</Badge>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => removeRow(i)}
-                    className="text-stone-500 hover:text-red-400 text-xs"
-                    aria-label="Remove row"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <LabeledInput
-                    label="Toy #"
-                    value={row.toyNumber}
-                    onChange={(v) => updateRow(i, "toyNumber", v)}
-                  />
-                  <LabeledInput
-                    label="Col. #"
-                    value={row.collectorNumber}
-                    onChange={(v) => updateRow(i, "collectorNumber", v)}
-                  />
-                  <div className="col-span-2">
-                    <LabeledInput
-                      label="Model Name"
-                      value={row.modelName}
-                      onChange={(v) => updateRow(i, "modelName", v)}
-                    />
-                  </div>
-                  <LabeledInput
-                    label="Series"
-                    value={row.seriesName}
-                    onChange={(v) => updateRow(i, "seriesName", v)}
-                  />
-                  <LabeledInput
-                    label="Series #"
-                    value={row.seriesNumber}
-                    onChange={(v) => updateRow(i, "seriesNumber", v)}
-                  />
-                </div>
-              </div>
-            ))}
+          {/* Editable preview table */}
+          <div className="bg-stone-900 border border-stone-700 rounded-xl overflow-hidden">
+            <div className="max-h-80 overflow-y-auto lg:overflow-x-visible overflow-x-auto">
+              <table className="w-full table-fixed text-xs min-w-[720px] lg:min-w-0">
+                <colgroup>
+                  <col className="w-14" />
+                  <col className="w-16" />
+                  <col className="w-16" />
+                  <col />
+                  <col className="w-28" />
+                  <col className="w-16" />
+                  <col className="w-10" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-stone-700 text-left text-stone-400 text-[10px] uppercase tracking-wide bg-stone-800/80">
+                    <th className="px-2 py-2">Photo</th>
+                    <th className="px-2 py-2">Toy #</th>
+                    <th className="px-2 py-2">Col. #</th>
+                    <th className="px-2 py-2">Model Name</th>
+                    <th className="px-2 py-2">Series</th>
+                    <th className="px-2 py-2">Ser. #</th>
+                    <th className="px-2 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => {
+                    const photoSrc = resolveChecklistItemPhotoUrl(
+                      row.photoUrl,
+                      row.imageRef,
+                    );
+                    return (
+                      <tr
+                        key={i}
+                        className="border-b border-stone-800 align-top hover:bg-stone-800/40"
+                      >
+                        <td className="px-2 py-2">
+                          <div className="flex flex-col items-center gap-1">
+                            {photoSrc ? (
+                              <img
+                                src={photoSrc}
+                                alt={row.modelName}
+                                className="w-10 h-10 object-contain rounded-md bg-stone-700"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-stone-700/50 rounded-md flex items-center justify-center text-base">
+                                🚗
+                              </div>
+                            )}
+                            <input
+                              value={row.photoUrl}
+                              onChange={(e) =>
+                                updateRow(i, "photoUrl", e.target.value)
+                              }
+                              placeholder="Image URL"
+                              className={`${inputClass} text-[10px] px-1 py-1`}
+                              aria-label={`Photo URL for row ${i + 1}`}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={row.toyNumber}
+                            onChange={(e) =>
+                              updateRow(i, "toyNumber", e.target.value)
+                            }
+                            className={inputClass}
+                            aria-label={`Toy number row ${i + 1}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={row.collectorNumber}
+                            onChange={(e) =>
+                              updateRow(i, "collectorNumber", e.target.value)
+                            }
+                            className={inputClass}
+                            aria-label={`Collector number row ${i + 1}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={row.modelName}
+                            onChange={(e) =>
+                              updateRow(i, "modelName", e.target.value)
+                            }
+                            className={inputClass}
+                            aria-label={`Model name row ${i + 1}`}
+                          />
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {row.isSuperTreasureHunt && (
+                              <Badge color="purple">$TH</Badge>
+                            )}
+                            {row.isTreasureHunt && !row.isSuperTreasureHunt && (
+                              <Badge color="green">TH</Badge>
+                            )}
+                            {row.isExclusive && (
+                              <Badge color="blue">
+                                {row.exclusiveStore ?? "Exclusive"}
+                              </Badge>
+                            )}
+                            {isDupRow(row) && (
+                              <Badge color="amber">Dup</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={row.seriesName}
+                            onChange={(e) =>
+                              updateRow(i, "seriesName", e.target.value)
+                            }
+                            className={inputClass}
+                            aria-label={`Series row ${i + 1}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={row.seriesNumber}
+                            onChange={(e) =>
+                              updateRow(i, "seriesNumber", e.target.value)
+                            }
+                            className={inputClass}
+                            aria-label={`Series number row ${i + 1}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            onClick={() => removeRow(i)}
+                            className="text-stone-500 hover:text-red-400 text-xs"
+                            aria-label="Remove row"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {friendlyError && (
@@ -712,28 +791,5 @@ function Badge({
     >
       {children}
     </span>
-  );
-}
-
-function LabeledInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] uppercase tracking-wide text-stone-500 mb-0.5">
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={inputClass}
-      />
-    </label>
   );
 }

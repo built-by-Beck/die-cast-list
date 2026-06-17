@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlanImageCard from './PlanImageCard';
 import basicPlanImage from '../../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../../media/die-cast-vault-pro.png';
 import { SUPPORT_EMAIL } from '../../lib/site';
@@ -53,16 +54,18 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl mb-5">
-        <img
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mb-5">
+        <PlanImageCard
           src={basicPlanImage}
           alt="Die Cast Vault Basic plan"
-          className="w-full h-24 object-cover rounded-xl border border-stone-700"
+          label="Basic"
+          highlighted={requiredPlan === 'basic'}
         />
-        <img
+        <PlanImageCard
           src={proPlanImage}
           alt="Die Cast Vault Pro plan"
-          className="w-full h-24 object-cover rounded-xl border border-stone-700"
+          label="Pro"
+          highlighted={requiredPlan === 'premium'}
         />
       </div>
 
@@ -99,7 +102,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
       </div>
 
       <p className="text-stone-600 text-xs mt-6 max-w-xs">
-        Your plan updates automatically after checkout when webhooks are configured.
+        Your plan updates automatically after checkout.
         <br />
         Already paid?{' '}
         <a href={`mailto:${SUPPORT_EMAIL}`} className="text-amber-500 hover:underline">

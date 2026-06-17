@@ -572,3 +572,54 @@ ACCEPTED WITH MINOR CONCERNS
 
 **Next Recommended Action:** Deploy `functions:ai`, then test as an admin: paste a real Fandom table, verify counts/tags/dedupe, and confirm member checklist tracking is unaffected.
 
+---
+
+## 2026-06-16 - Ship: Import Cars workflow (deploy)
+
+**Validation:** typecheck + root build + functions/ai build — PASS before commit.
+
+**Git:** `0a9b8f3` → rebased/pushed to `origin/main` as `9c621ce` — `feat: beginner-friendly Import Cars workflow with Fandom paste, URL fetch, preview built_by_Beck`
+
+**Deploy:** `firebase deploy --only hosting,functions:ai` to `collectors-garage-app` — SUCCESS. Hosting live at https://collectors-garage-app.web.app. New `ai:fetchFandomChecklistHtml` created; other ai functions updated.
+
+**Skipped:** `functions` (default/Stripe codebase) — blocked: `STRIPE_WEBHOOK_SECRET` not set in Secret Manager. Run `firebase functions:secrets:set STRIPE_WEBHOOK_SECRET` then `firebase deploy --only functions:default` when Stripe webhooks are ready.
+
+---
+
+## 2026-06-16 - Stripe signup → checkout → webhook flow wired
+
+**Task:** When a user signs up via Basic/Pro on the landing page, create account then redirect to Stripe Checkout; webhook syncs subscription to Firestore.
+
+**Classification:** LARGE (billing + auth flow). Backend (`createCheckoutSession`, `stripeWebhook`) already existed in `functions/src/index.ts` but was not deployed.
+
+**Build:**
+- `LandingPage`: Get Basic/Pro → `/login?mode=register&plan=basic|premium`; Start Free → `?mode=register`.
+- `LoginPage`: reads plan from URL; after auth + `bootstrapUserDoc`, calls `startStripeCheckout(plan)`; Google OAuth stashes plan in sessionStorage.
+- `billing.ts`: `parseCheckoutPlan`, `stash/takePendingCheckoutPlan`, `checkoutPlanLabel`.
+- `DashboardPage`: checkout success/cancel banners from `?checkout=` param.
+- `functions/src/index.ts`: success/cancel URLs → `/dashboard?checkout=...`.
+
+**Validation:** `npm run typecheck`, `npm run build`, `functions` tsc — PASS.
+
+**Deploy:** NOT run — requires `STRIPE_WEBHOOK_SECRET` in Secret Manager + Stripe Dashboard webhook endpoint.
+
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS (deploy + Stripe Dashboard webhook setup still manual).
+
+**Next:** Set secrets, deploy `functions:default`, register webhook URL in Stripe, deploy hosting.
+
+---
+
+## 2026-06-16 - Stripe functions deploy fix + success
+
+**Issue:** Deploy failed — `Secret environment variable overlaps non secret environment variable: STRIPE_SECRET_KEY`. Cause: `STRIPE_SECRET_KEY` was in both `functions/.env` (plain env) and Secret Manager (`defineSecret`).
+
+**Fix:** Removed secrets from `functions/.env`; kept only `defineString` params (`PUBLIC_APP_URL`, price IDs). Clarified `functions/.env.example`.
+
+**Deploy:** `firebase deploy --only functions:default` — SUCCESS.
+- `createCheckoutSession` (callable, us-central1)
+- `stripeWebhook` URL: `https://us-central1-collectors-garage-app.cloudfunctions.net/stripeWebhook`
+
+**Note:** User also set `PUBLIC_APP_URL` / price IDs as secrets — unnecessary; code uses `defineString` from `.env`. Only `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` belong in Secret Manager.
+
+**Next:** Create Stripe webhook endpoint with deployed URL → copy real `whsec_` → `firebase functions:secrets:set STRIPE_WEBHOOK_SECRET` → redeploy functions.
+

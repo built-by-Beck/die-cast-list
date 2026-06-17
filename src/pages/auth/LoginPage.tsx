@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { SITE_NAME } from '../../lib/site';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import collectorShelfImage from '../../../media/keith-diecast-hero.png';
 import {
   signInWithEmailAndPassword,
@@ -13,6 +13,15 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import Button from '../../components/ui/Button';
+import {
+  checkoutPlanLabel,
+  formatCheckoutError,
+  parseCheckoutPlan,
+  startStripeCheckout,
+  stashPendingCheckoutPlan,
+  takePendingCheckoutPlan,
+  type CheckoutPlan,
+} from '../../lib/billing';
 
 type Mode = 'signin' | 'register';
 
@@ -71,7 +80,9 @@ async function bootstrapUserDoc(
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>('signin');
+  const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -79,6 +90,29 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showReset, setShowReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('mode') === 'register') {
+      setMode('register');
+    }
+    const plan = parseCheckoutPlan(searchParams.get('plan'));
+    if (plan) setSelectedPlan(plan);
+  }, [searchParams]);
+
+  const completeAuthFlow = async () => {
+    const plan = selectedPlan ?? takePendingCheckoutPlan();
+    if (plan) {
+      try {
+        await startStripeCheckout(plan);
+        return;
+      } catch (err: unknown) {
+        setError(formatCheckoutError(err));
+        navigate('/dashboard');
+        return;
+      }
+    }
+    navigate('/dashboard');
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -93,7 +127,7 @@ export default function LoginPage() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-      navigate('/dashboard');
+      await completeAuthFlow();
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? '';
       const msg = getAuthErrorMessage(code);
@@ -107,10 +141,11 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
+      if (selectedPlan) stashPendingCheckoutPlan(selectedPlan);
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       const u = result.user;
       await bootstrapUserDoc(u.uid, u.email!, u.displayName ?? '', u.photoURL);
-      navigate('/dashboard');
+      await completeAuthFlow();
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? '';
       const msg = getAuthErrorMessage(code);
@@ -204,8 +239,17 @@ export default function LoginPage() {
             <div className="text-2xl font-bold text-amber-500">{SITE_NAME}</div>
           </Link>
           <p className="text-stone-400 mt-2">
-            {mode === 'signin' ? 'Welcome back, collector!' : 'Start your vault today.'}
+            {mode === 'signin'
+              ? 'Welcome back, collector!'
+              : selectedPlan
+                ? `Create your account, then continue to ${checkoutPlanLabel(selectedPlan)} checkout.`
+                : 'Start your vault today.'}
           </p>
+          {mode === 'register' && selectedPlan && (
+            <p className="text-amber-400 text-sm font-semibold mt-2">
+              {checkoutPlanLabel(selectedPlan)} plan — ${selectedPlan === 'premium' ? '22' : '7'}/mo after signup
+            </p>
+          )}
         </div>
 
         {/* Card */}
@@ -309,7 +353,9 @@ export default function LoginPage() {
                 ? 'Send Reset Email'
                 : mode === 'signin'
                 ? 'Sign In'
-                : 'Create My Vault'}
+                : selectedPlan
+                  ? `Create Account & Pay for ${checkoutPlanLabel(selectedPlan)}`
+                  : 'Create Account'}
             </Button>
 
             {showReset && (

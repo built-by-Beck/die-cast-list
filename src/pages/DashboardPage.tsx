@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
   useTrackedLists,
@@ -10,11 +10,28 @@ import { getEffectivePlan } from "../lib/access";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
   const { user, userDoc } = useAuth();
   const { trackedLists } = useTrackedLists(user?.uid);
   const { byChecklistId } = useUserChecklistSummaries(user?.uid);
   const { cars } = useInventory();
   const effectivePlan = userDoc ? getEffectivePlan(userDoc) : "free";
+
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (checkout === "success") {
+      setCheckoutBanner(
+        "Payment received — your plan will activate in a few seconds once Stripe confirms.",
+      );
+    } else if (checkout === "cancel") {
+      setCheckoutBanner("Checkout was canceled. You can upgrade anytime from Settings.");
+    }
+    if (checkout) {
+      searchParams.delete("checkout");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const totals = useMemo(() => {
     const all = Object.values(byChecklistId);
@@ -37,6 +54,11 @@ export default function DashboardPage() {
   return (
     <div className="page-container">
       <h1 className="page-title mb-5">My Vault Dashboard</h1>
+      {checkoutBanner && (
+        <div className="mb-5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
+          {checkoutBanner}
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 mb-5">
         {[
           { label: "Total owned cars", value: totals.owned },

@@ -5,6 +5,28 @@ import { firebaseApp } from './firebase';
 export type CheckoutPlan = 'basic' | 'premium';
 
 const DEFAULT_FUNCTIONS_REGION = 'us-central1';
+const PENDING_CHECKOUT_PLAN_KEY = 'dcv_pending_checkout_plan';
+
+export function parseCheckoutPlan(
+  value: string | null | undefined,
+): CheckoutPlan | null {
+  return value === 'basic' || value === 'premium' ? value : null;
+}
+
+/** Persist selected plan across Google OAuth popup redirect. */
+export function stashPendingCheckoutPlan(plan: CheckoutPlan): void {
+  sessionStorage.setItem(PENDING_CHECKOUT_PLAN_KEY, plan);
+}
+
+export function takePendingCheckoutPlan(): CheckoutPlan | null {
+  const raw = sessionStorage.getItem(PENDING_CHECKOUT_PLAN_KEY);
+  sessionStorage.removeItem(PENDING_CHECKOUT_PLAN_KEY);
+  return parseCheckoutPlan(raw);
+}
+
+export function checkoutPlanLabel(plan: CheckoutPlan): string {
+  return plan === 'premium' ? 'Pro' : 'Basic';
+}
 
 /**
  * Starts Stripe Checkout via the Cloud Function `createCheckoutSession`.

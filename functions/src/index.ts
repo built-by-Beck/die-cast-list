@@ -189,8 +189,8 @@ export const createCheckoutSession = onCall(
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/settings?checkout=success`,
-      cancel_url: `${baseUrl}/settings?checkout=cancel`,
+      success_url: `${baseUrl}/dashboard?checkout=success`,
+      cancel_url: `${baseUrl}/dashboard?checkout=cancel`,
       client_reference_id: uid,
       metadata: {
         firebaseUid: uid,

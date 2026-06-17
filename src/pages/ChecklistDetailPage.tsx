@@ -10,6 +10,7 @@ import { useMasterChecklistDetail } from '../hooks/useChecklistsFirestore';
 import { db } from '../lib/firebase';
 import { persistChecklistProgressState } from '../lib/checklistProgressFirestore';
 import { getEffectivePlan } from '../lib/access';
+import { resolveChecklistItemPhotoUrl } from '../lib/checklistItemPhoto';
 
 type StatusFilter = 'all' | 'need' | 'owned' | 'duplicate' | 'favorites';
 type SortKey = 'sortOrder' | 'toyNumber' | 'collectorNumber' | 'modelName';
@@ -211,7 +212,7 @@ export default function ChecklistDetailPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className={`mx-auto px-4 py-6 ${viewMode === 'table' ? 'max-w-7xl' : 'max-w-5xl'}`}>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-stone-500 mb-4">
         <Link to="/checklists" className="hover:text-stone-300 transition-colors">Checklists</Link>
@@ -448,20 +449,32 @@ function ChecklistTable({
 }) {
   return (
     <div className="bg-stone-800 border border-stone-700 rounded-2xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[740px]">
+      <div className="lg:overflow-visible overflow-x-auto">
+        <table className="w-full table-fixed text-xs lg:min-w-0 min-w-[640px]">
+          <colgroup>
+            <col className="w-[4.5rem]" />
+            <col className="w-[3rem]" />
+            <col className="w-[3rem]" />
+            <col className="w-[2.75rem]" />
+            <col />
+            <col className="w-[7rem]" />
+            <col className="w-[3rem]" />
+            <col className="w-[4.5rem]" />
+            {isPro && <col className="w-[6.5rem]" />}
+            <col className="w-[2rem]" />
+          </colgroup>
           <thead>
-            <tr className="border-b border-stone-700 text-left text-stone-400 text-xs font-semibold uppercase tracking-wide bg-stone-900/50">
-              <th className="px-4 py-3">Qty</th>
-              <th className="px-4 py-3">Toy #</th>
-              <th className="px-4 py-3">Col.#</th>
-              <th className="px-4 py-3 w-12"></th>
-              <th className="px-4 py-3">Model Name</th>
-              <th className="px-4 py-3">Series</th>
-              <th className="px-4 py-3">Ser.#</th>
-              <th className="px-4 py-3">Rarity</th>
-              <th className="px-4 py-3">Intent</th>
-              <th className="px-4 py-3">★</th>
+            <tr className="border-b border-stone-700 text-left text-stone-400 text-[10px] font-semibold uppercase tracking-wide bg-stone-900/50">
+              <th className="px-2 py-2">Qty</th>
+              <th className="px-2 py-2">Toy #</th>
+              <th className="px-2 py-2">Col.#</th>
+              <th className="px-2 py-2">Photo</th>
+              <th className="px-2 py-2">Model Name</th>
+              <th className="px-2 py-2">Series</th>
+              <th className="px-2 py-2">Ser.#</th>
+              <th className="px-2 py-2">Rarity</th>
+              {isPro && <th className="px-2 py-2">Intent</th>}
+              <th className="px-2 py-2">★</th>
             </tr>
           </thead>
           <tbody>
@@ -469,6 +482,7 @@ function ChecklistTable({
               const qty    = quantityMap[item.id] ?? 0;
               const { status } = calcQuantityState(qty);
               const isFav  = favoritesMap[item.id] ?? false;
+              const photoSrc = resolveChecklistItemPhotoUrl(item.photoUrl, item.imageRef);
 
               const rowBg =
                 status === 'owned'
@@ -492,93 +506,88 @@ function ChecklistTable({
                   className={`border-b border-stone-700/50 hover:bg-stone-700/30 transition-colors ${rowBg} ${leftBorder}`}
                 >
                   {/* Qty controls */}
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-1">
+                  <td className="px-2 py-2 align-top">
+                    <div className="flex items-center gap-0.5">
                       <button
                         onClick={() => onDecrement(item.id)}
                         disabled={qty === 0}
-                        className="w-7 h-7 rounded-lg bg-stone-700 hover:bg-red-900/60 disabled:opacity-25 text-stone-300 font-bold text-base leading-none flex items-center justify-center transition-colors"
+                        className="w-6 h-6 rounded-md bg-stone-700 hover:bg-red-900/60 disabled:opacity-25 text-stone-300 font-bold text-sm leading-none flex items-center justify-center transition-colors"
                       >
                         −
                       </button>
-                      <span className={`w-7 text-center font-bold text-sm ${
+                      <span className={`w-5 text-center font-bold text-xs ${
                         qty === 0 ? 'text-stone-600' : qty === 1 ? 'text-green-400' : 'text-amber-400'
                       }`}>
                         {qty}
                       </span>
                       <button
                         onClick={() => onIncrement(item.id)}
-                        className="w-7 h-7 rounded-lg bg-stone-700 hover:bg-green-700 text-stone-300 hover:text-white font-bold text-base leading-none flex items-center justify-center transition-colors"
+                        className="w-6 h-6 rounded-md bg-stone-700 hover:bg-green-700 text-stone-300 hover:text-white font-bold text-sm leading-none flex items-center justify-center transition-colors"
                       >
                         +
                       </button>
                     </div>
                     {!isPro && (
-                      <div className="mt-1 flex gap-1">
-                        <button onClick={() => onMarkOwned(item.id)} className="rounded-md bg-green-700 px-2 py-0.5 text-[10px] font-semibold text-green-100">I own this</button>
-                        <button onClick={() => onMarkNotOwned(item.id)} className="rounded-md bg-stone-700 px-2 py-0.5 text-[10px] font-semibold text-stone-200">I do not own this</button>
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        <button onClick={() => onMarkOwned(item.id)} className="rounded-md bg-green-700 px-1.5 py-0.5 text-[9px] font-semibold text-green-100 leading-tight">Own</button>
+                        <button onClick={() => onMarkNotOwned(item.id)} className="rounded-md bg-stone-700 px-1.5 py-0.5 text-[9px] font-semibold text-stone-200 leading-tight">Need</button>
                       </div>
                     )}
                   </td>
                   {/* Toy # */}
-                  <td className="px-4 py-2.5">
-                    <span className="font-mono text-stone-400 text-xs">{item.toyNumber || '—'}</span>
+                  <td className="px-2 py-2 align-top">
+                    <span className="font-mono text-stone-400 text-[10px] leading-tight break-all">{item.toyNumber || '—'}</span>
                   </td>
                   {/* Col.# */}
-                  <td className="px-4 py-2.5">
-                    <span className="font-mono text-stone-500 text-xs">{item.collectorNumber || '—'}</span>
+                  <td className="px-2 py-2 align-top">
+                    <span className="font-mono text-stone-500 text-[10px] leading-tight break-all">{item.collectorNumber || '—'}</span>
                   </td>
                   {/* Photo */}
-                  <td className="px-4 py-2.5">
-                    {item.photoUrl ? (
-                      <img src={item.photoUrl} alt="" className="w-10 h-10 object-contain rounded-lg bg-stone-700" />
+                  <td className="px-2 py-2 align-top">
+                    {photoSrc ? (
+                      <img src={photoSrc} alt="" className="w-9 h-9 object-contain rounded-md bg-stone-700" loading="lazy" />
                     ) : (
-                      <div className="w-10 h-10 bg-stone-700/50 rounded-lg flex items-center justify-center text-base">🚗</div>
+                      <div className="w-9 h-9 bg-stone-700/50 rounded-md flex items-center justify-center text-sm">🚗</div>
                     )}
                   </td>
                   {/* Model Name */}
-                  <td className="px-4 py-2.5 max-w-[220px]">
-                    <div className="font-semibold text-stone-100 leading-tight truncate">{item.modelName}</div>
+                  <td className="px-2 py-2 align-top min-w-0">
+                    <div className="font-semibold text-stone-100 leading-tight truncate" title={item.modelName}>{item.modelName}</div>
                     {item.variationLabel && (
-                      <div className="text-xs text-stone-500 truncate mt-0.5">{item.variationLabel}</div>
-                    )}
-                    {item.notes && (
-                      <div className="text-xs text-stone-600 italic mt-0.5">{item.notes}</div>
+                      <div className="text-[10px] text-stone-500 truncate mt-0.5" title={item.variationLabel}>{item.variationLabel}</div>
                     )}
                   </td>
                   {/* Series */}
-                  <td className="px-4 py-2.5">
-                    <span className="text-stone-400 text-xs whitespace-nowrap">{item.seriesName}</span>
+                  <td className="px-2 py-2 align-top">
+                    <span className="text-stone-400 text-[10px] leading-tight line-clamp-2" title={item.seriesName}>{item.seriesName}</span>
                   </td>
                   {/* Series # */}
-                  <td className="px-4 py-2.5">
-                    <span className="font-mono text-stone-500 text-xs">{item.seriesNumber || '—'}</span>
+                  <td className="px-2 py-2 align-top">
+                    <span className="font-mono text-stone-500 text-[10px]">{item.seriesNumber || '—'}</span>
                   </td>
                   {/* Rarity */}
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-2 align-top">
                     <RarityBadge rarity={item.rarityType} />
                   </td>
-                  <td className="px-4 py-2.5">
-                    {isPro ? (
+                  {isPro && (
+                  <td className="px-2 py-2 align-top">
                       <select
                         aria-label="Select public intent status"
                         value={intentMap[item.id] ?? 'none'}
                         onChange={(e) => onSetIntent(item.id, e.target.value as ChecklistPublicIntentStatus)}
-                        className="rounded-lg border border-stone-700 bg-stone-900 px-2 py-1 text-xs text-stone-200"
+                        className="w-full rounded-md border border-stone-700 bg-stone-900 px-1 py-1 text-[10px] text-stone-200"
                       >
                         {PRO_INTENT_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
-                    ) : (
-                      <span className="text-xs text-stone-500">Pro only</span>
-                    )}
                   </td>
+                  )}
                   {/* Favorite */}
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-2 align-top">
                     <button
                       onClick={() => onToggleFavorite(item.id)}
-                      className={`text-xl transition-colors ${
+                      className={`text-base transition-colors ${
                         isFav ? 'text-amber-400' : 'text-stone-700 hover:text-stone-500'
                       }`}
                     >
@@ -626,14 +635,15 @@ function ChecklistItemCard({
 
   const borderColor = status === 'owned' ? 'border-l-green-500' : status === 'duplicate' ? 'border-l-amber-500' : 'border-l-stone-600';
   const bgColor     = status === 'owned' ? 'bg-green-500/5'    : status === 'duplicate' ? 'bg-amber-500/5'    : '';
+  const photoSrc = resolveChecklistItemPhotoUrl(item.photoUrl, item.imageRef);
 
   return (
     <div className={`bg-stone-800 border border-stone-700 border-l-4 ${borderColor} ${bgColor} rounded-2xl p-4`}>
       <div className="flex gap-3">
         {/* Photo */}
         <div className="flex-shrink-0">
-          {item.photoUrl ? (
-            <img src={item.photoUrl} alt="" className="w-16 h-16 object-contain rounded-xl bg-stone-700" />
+          {photoSrc ? (
+            <img src={photoSrc} alt="" className="w-16 h-16 object-contain rounded-xl bg-stone-700" loading="lazy" />
           ) : (
             <div className="w-16 h-16 bg-stone-700 rounded-xl flex items-center justify-center text-2xl">🚗</div>
           )}
