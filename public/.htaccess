@@ -1,0 +1,15 @@
+# React Router SPA — serve index.html for client-side routes (Hostinger / Apache / LiteSpeed)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Leave real files and folders alone (assets, images, etc.)
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Disable directory listing and content negotiation that can break SPA paths
+Options -MultiViews
