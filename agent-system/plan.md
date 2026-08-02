@@ -38,17 +38,20 @@ Out of scope:
 
 ## Validation
 
-- Formatter: not configured
-- Linter: not configured
-- Typecheck: tsc (npm run build)
+- Formatter: `npm run format` (Prettier)
+- Linter: `npm run lint` (alias for typecheck — no ESLint on the frontend)
+- Typecheck: `npm run typecheck` / `npm run build`
+- Functions: `npm --prefix functions run build`, `npm --prefix functions/ai run build`
 - Tests: not configured
 - Manual checks: [checks]
 
 ## Review Focus
 
 - Plan compliance
-- Plan-gating correctness (src/lib/access.ts)
+- Plan-gating correctness — client (src/lib/access.ts), rules (firestore.rules), and functions
+  (assertPremium/assertAdmin) must stay in sync
 - Public visibility safety (publicVisible + publicProfileEnabled)
+- Correct namespace: `users/{uid}` for the UserDoc vs `usr/{uid}/...` for operational data
 - Auth and user data access
 - Regression risk
 

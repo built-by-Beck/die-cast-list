@@ -6,11 +6,14 @@ Shared running notebook and handoff channel for all PBRD agents.
 
 **Project:** Die Cast Vault
 **Description:** Diecast car collection tracker for Hot Wheels, Matchbox, and similar brand collectors. Users track inventory, manage checklists, log duplicates, build a wanted list, and share a public showcase.
-**Tech Stack:** React 18 + TypeScript + Vite + Tailwind CSS + React Router v6 · Firebase Auth + Firestore + Storage (client-side) · Stripe pending · Firebase Hosting
-**Data Model:** User-centric — `usr/{uid}/...` subcollections (NOT org-based)
-**Plans:** none → basic (250 cars, 1 photo/car, 10 showcase, 3 custom checklists) → premium (unlimited + 5 photos + 25 showcase) · `lifetimeAccess` override always resolves to premium
-**High-Risk Areas:** auth, plan-gating (`src/lib/access.ts`), public visibility logic, Stripe billing (pending), user data deletion, Firestore rules, admin role, production deployment
-**Build Commands:** `npm run dev` · `npm run build` (tsc && vite build) · `npm run preview`
+**Tech Stack:** React 18 + TypeScript + Vite + Tailwind CSS + React Router · Firebase Auth + Firestore + Storage (client-side) · Cloud Functions: `functions/` (Stripe, Node 20) + `functions/ai/` (Genkit/Gemini, Node 22), both deployed to us-central1 · Stripe billing LIVE
+**Data Model:** User-centric. `users/{uid}` = UserDoc (role/plan/Stripe/lifetimeAccess, webhook-owned). `usr/{uid}/...` = operational subcollections (cars, wanted, trackedLists, checklistProgress/{id}/progressItems, photos, settings). Global: `checklists/{id}/items`, `marketplaceIntents`, `adminLogs`. NOT org-based.
+**Plans:** none/free (0 everything) → basic ($7: 1 list, 10 cars, 1 photo, 10 showcase, 3 checklists) → premium/"Pro" ($22: 25 lists, 5000 cars, 1 photo, 25 showcase, unlimited checklists, AI + marketplace) · `lifetimeAccess` always resolves to premium · source of truth is `PLAN_LIMITS` in `src/lib/access.ts`
+**Hosting:** diecastlist.com → Hostinger (current build); collectors-garage-app.web.app → Firebase Hosting (older build). `firebase deploy --only hosting` does NOT update the production domain.
+**High-Risk Areas:** auth, plan-gating (`src/lib/access.ts`), public visibility logic, Stripe billing, user data deletion, Firestore/Storage rules, admin role, production deployment
+**Billing (fixed 2026-08-01):** webhook endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` created, `STRIPE_WEBHOOK_SECRET` v2 stored, `functions:default` redeployed. Before this, no endpoint existed and paid checkouts never activated — one $7 customer was stranded for 12 days. A signed test event has not been sent yet; see `LAUNCH.md`.
+**Local setup gotcha:** `functions/.env` is gitignored and must exist to deploy — `PUBLIC_APP_URL`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_PRO_ID`. Also run `npm --prefix functions install` before the first deploy from a fresh clone.
+**Build Commands:** `npm run dev` · `npm run build` (tsc && vite build) · `npm run typecheck`/`lint` · `npm run format` · `npm run deploy:functions` · no test framework
 
 ## Memory Rules
 
@@ -655,3 +658,94 @@ ACCEPTED WITH MINOR CONCERNS
 
 **Next:** Create Stripe webhook endpoint with deployed URL → copy real `whsec_` → `firebase functions:secrets:set STRIPE_WEBHOOK_SECRET` → redeploy functions.
 
+
+---
+
+## 2026-07-25 - Repo sync with origin/main
+
+**Classification:** MEDIUM
+**Task:** Get local main up to date with the repo.
+
+**Summary:**
+- Fetched origin and rebased local main onto origin/main, preserving the local launch documentation commit.
+- Resolved rebase conflicts in .firebaserc and agent-system/agent-info.md.
+- Reapplied the pre-sync stash; kept upstream versions for branding/login conflicts so current Die Cast List + Stripe checkout wiring remains intact.
+- Removed stale package-lock churn from the rebased local commit.
+
+**Files Changed:**
+- LAUNCH.md
+- agent-system/agent-info.md
+
+**Validation:**
+- npm run build passed.
+
+**Review Verdict:**
+ACCEPTED WITH MINOR CONCERNS
+
+**Risks / Blockers:**
+- Local main is ahead of origin/main by the preserved launch docs commit.
+- Pre-sync stash remains as stash@{0}; untracked Keith image files remain in the worktree.
+
+**Next Recommended Action:**
+Decide whether to push the preserved local launch commit or drop it if origin/main should be the exact source of truth.
+
+---
+
+## 2026-08-01 - Doc audit vs live systems + paying customer not activated
+
+**Classification:** LARGE (billing + production data)
+**Task:** `/init` doc rebuild, which surfaced a live billing failure.
+
+**Summary:**
+- Rewrote `CLAUDE.md`, `AGENTS.md`, `LAUNCH.md`, `README.md`, plus the `agent-info.md` snapshot header, `lessons_learned.md`, and `plan.md`. Prior docs claimed "Cloud Functions not yet implemented" and "Stripe pending" while 7 functions were deployed and Checkout was live; every plan-limit number was wrong; the data model was described as `usr/{uid}` when the UserDoc lives at `users/{uid}`.
+- Verified live state instead of trusting docs: `firebase functions:list`, HTTP headers on both domains, Stripe API, Firestore REST reads.
+- **diecastlist.com is served by Hostinger**, not Firebase Hosting (`platform: hostinger`). `collectors-garage-app.web.app` runs an older build. `public/.htaccess` is live config for the Hostinger deploy.
+- **Found a real customer paying for nothing:** uid `RCm8f66gwLXmDaerkDVVDWQnJbm2` completed Checkout on 2026-07-20 ($7 Basic, `sub_1TvIKdAzoOtBRx5S1Ssdu4Li`, active), but their user doc still read `plan: "none"` with `updateTime == createTime` — nothing had ever written to it. Root cause: no Stripe webhook endpoint existed for this project, so `stripeWebhook` never ran.
+- **Fixed:** manually set `plan: basic`, `subscriptionStatus: active`, `stripeCustomerId`, `stripeSubscriptionId` on that doc via Firestore REST (owner credentials bypass rules). Customer now resolves to Basic.
+- **Fixed:** created Stripe webhook endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` → `https://us-central1-collectors-garage-app.cloudfunctions.net/stripeWebhook`, subscribed to checkout.session.completed, customer.subscription.{created,updated,deleted}, invoice.payment_failed.
+
+**Files Changed:**
+- CLAUDE.md, AGENTS.md, LAUNCH.md, README.md (rewritten/updated)
+- agent-system/agent-info.md, lessons_learned.md, plan.md
+
+**Validation:** Docs only in source; no app code touched. Production writes verified by re-reading the user doc. Endpoint creation confirmed `status: enabled, livemode: true`.
+
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS — the webhook cannot verify signatures yet.
+
+**Risks / Blockers:**
+- `STRIPE_WEBHOOK_SECRET` in Secret Manager has one version dated 2026-06-16, which predates the new endpoint. Until the real `whsec_` from `we_1TzoZJ...` is stored and functions are redeployed, every delivery fails signature verification — and Stripe disables endpoints that keep failing.
+- A second active subscription ($22 Pro, `sub_1Tf4PsAzoOtBRx5SSnKdmifX`, customer `cus_UeN3OA5TC31bXj`, since 2026-06-04) is linked to no Firebase account. Customer email is redacted through MCP; identify it in the Stripe Dashboard.
+- Two hosting front doors continue to drift.
+
+**Next Recommended Action:**
+Reveal the signing secret for `we_1TzoZJ...` in the Stripe Dashboard, run `firebase functions:secrets:set STRIPE_WEBHOOK_SECRET`, redeploy `functions:default`, then test a live checkout end to end.
+
+---
+
+## 2026-08-01 - Billing return path repaired
+
+**Classification:** LARGE (Stripe billing + production deploy)
+**Task:** Follow-up to the doc audit — actually fix the broken webhook path.
+
+**Summary:**
+- Created Stripe webhook endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` (livemode, enabled) for `stripeWebhook`.
+- Stored the endpoint signing secret as `STRIPE_WEBHOOK_SECRET` version 2 via `firebase functions:secrets:set --data-file -`.
+- First deploy attempt failed twice, both environment issues, not code: (1) `functions/node_modules` was missing → `tsc` could not resolve `firebase-functions`/`stripe`; fixed with `npm --prefix functions install`. (2) `functions/.env` did not exist locally → deploy aborted on missing `PUBLIC_APP_URL`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_PRO_ID`. Recreated it from verified values: price IDs from the live Stripe products, `PUBLIC_APP_URL=https://diecastlist.com` confirmed by the `success_url` recorded on the real 2026-07-20 checkout session.
+- Redeployed `functions:default`. Audit log confirms both functions now bind secret version 2; `stripeWebhook` revision `stripewebhook-00002-taq`, state ACTIVE.
+- Verified routing: unsigned POST to the registered cloudfunctions.net URL returns `400 Missing stripe-signature header`, so the URL reaches the deployed handler's signature check.
+
+**Files Changed:**
+- functions/.env (recreated, gitignored — not committed)
+- LAUNCH.md, agent-system/agent-info.md
+
+**Validation:** `npm --prefix functions run build` clean; deploy succeeded; endpoint reachability + bound secret version confirmed from the audit log.
+
+**Review Verdict:** ACCEPTED
+
+**Risks / Blockers:**
+- No *signed* event has been observed succeeding yet. Send a test webhook from the Dashboard, or wait for the next paid signup.
+- Node.js 20 runtime is deprecated and decommissions 2026-10-30 — `functions/` must move to Node 22 before then. `functions/ai/` is already on 22.
+- The unlinked $22 Pro subscription (`sub_1Tf4PsAzoOtBRx5SSnKdmifX`) is still unidentified.
+
+**Next Recommended Action:**
+Send a test webhook to confirm a 200, then identify the orphaned Pro subscription.

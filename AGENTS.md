@@ -1,25 +1,43 @@
-# Repository AI Instructions — Die Cast Vault
+# Repository AI Instructions — Die Cast Vault / Die Cast List
 
 **Diecast car collection tracker for Hot Wheels, Matchbox, and similar brand collectors.**
 
 Built by **built_by_Beck**. All commits must include `built_by_Beck` in the commit message.
 
+`CLAUDE.md` is the detailed architecture reference — read it first. This file is the short
+process contract that applies to every agent working in this repo.
+
 ## Tech Stack
 
-- React 18 + TypeScript + Vite + Tailwind CSS + React Router v6
-- Firebase Auth + Firestore + Firebase Storage (client-side)
-- Stripe billing (pending — stripeCustomerId/subscriptionId in UserDoc)
-- Firebase Hosting
+- React 18 + TypeScript + Vite + Tailwind CSS + React Router (v7 package, v6-style APIs)
+- Firebase Auth + Firestore + Storage (client SDK)
+- Cloud Functions — **two deployed codebases**: `functions/` (Stripe, Node 20) and
+  `functions/ai/` (Genkit + Gemini, Node 22), both in `us-central1`
+- Stripe billing — **live**: Checkout via callable `createCheckoutSession`, state synced by `stripeWebhook`
+- Hosting — Firebase project `collectors-garage-app`; the `diecastlist.com` domain is currently
+  served from Hostinger, not Firebase Hosting
 
 ## Architecture
 
-This is a **user-centric SaaS** (not org/multi-tenant). Data lives under `usr/{uid}/...`.
+User-centric SaaS (not org/multi-tenant). Two root namespaces, and they are not interchangeable:
 
-- All operational data under `usr/{uid}/...` — NOT `org/{orgId}`.
-- Plans are user-based: `none`, `basic`, `premium` (+ `lifetimeAccess` override).
-- Plan enforcement is centralized in `src/lib/access.ts` — never scatter plan checks.
-- Public visibility is controlled by `publicVisible` per item AND `publicProfileEnabled` per user. Both must be true for public exposure.
-- When Stripe is added: Stripe is billing source of truth. Client never mutates subscription state directly.
+- `users/{uid}` — the `UserDoc`: `role`, `plan`, `subscriptionStatus`, Stripe IDs, `lifetimeAccess`.
+  Billing and role fields are webhook-owned; `firestore.rules` blocks the client from writing them.
+- `usr/{uid}/...` — all operational data: `cars`, `wanted`, `trackedLists`,
+  `checklistProgress/{checklistId}/progressItems`, `photos`, `settings`.
+- Global: `checklists/{id}` + `/items` (public read, admin write), `marketplaceIntents`
+  (public read when active, premium-only write), `adminLogs`.
+
+Rules:
+
+- Plans are `none | free | basic | premium`. Always resolve with `getEffectivePlan(userDoc)` from
+  `src/lib/access.ts` — never read `userDoc.plan` directly. `lifetimeAccess: true` → premium.
+- Plan limits come from `PLAN_LIMITS` in `src/lib/access.ts`. Do not scatter plan checks into components.
+- Gating lives in three synchronized places: `src/lib/access.ts`, `firestore.rules`, and the
+  `assertPremium`/`assertAdmin` guards in `functions/ai/src/index.ts`.
+- Public visibility requires **both** `publicVisible` on the item and `publicProfileEnabled` on the
+  owner. Public profile/showcase pages are still unbuilt stubs with no supporting security rules.
+- Stripe is the billing source of truth. The client never mutates subscription state.
 - Admin role (`role: 'admin'`) changes are always LARGE.
 
 ## Required PBRD Workflow
@@ -36,9 +54,10 @@ Plan → Build → Review → Document.
 
 ## Task Classification
 
-- **SMALL**: 1-3 files, no high-risk systems.
+- **SMALL**: 1-3 files, no high-risk system.
 - **MEDIUM**: 4-8 files or a workflow/user-facing change.
-- **LARGE**: auth, Stripe, plan-gating (`access.ts`), Firestore rules, public visibility logic, user data deletion, admin role, production deployment, or more than 8 files. Full PBRD always.
+- **LARGE**: auth, Stripe/billing, plan-gating (`access.ts`), `firestore.rules`, `storage.rules`,
+  public visibility, user data deletion, admin role, production deployment, or more than 8 files.
 
 ## Token Budget Rules
 
@@ -47,11 +66,23 @@ Plan → Build → Review → Document.
 - Search lessons by keyword before broad reads.
 - Keep plans, reviews, and memory entries concise.
 
-## Build Commands
+## Commands
 
 - `npm run dev` — Vite dev server
+- `npm run typecheck` / `npm run lint` — `tsc --noEmit` (same thing)
 - `npm run build` — `tsc && vite build`
-- `npm run preview` — serve production build
+- `npm run format` — Prettier
+- `npm run deploy:functions` — deploy Cloud Functions to `collectors-garage-app`
+
+No test framework is configured. Validation = typecheck/build, plus
+`npm --prefix functions run build` and `npm --prefix functions/ai run build` for backend changes.
+
+## Verify Before Documenting
+
+Deployment and billing state drift from what these files claim. When a task depends on
+"what is actually live", check it (`firebase functions:list`, response headers on the live domain,
+the Stripe Dashboard) instead of trusting a doc — several stale claims have already been corrected
+this way.
 
 ## Review Verdicts
 
