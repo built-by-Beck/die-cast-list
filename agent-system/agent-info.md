@@ -284,7 +284,7 @@ Rename the product from Collectors Garage / Collector's Garage to Die Cast Vault
 **Summary:**
 - Updated `index.html` document title, landing/login/sidebar copy, inventory/loading strings, add-car success and CTA labels, protected-route loading text.
 - Replaced product-scoped "garage" phrasing with vault/collection wording where it referred to the app metaphor (not Hot Wheels series names like HW Dream Garage).
-- `package.json` / `package-lock.json` `name` → `die-cast-vault`; support mailto → `davidbeck@beck-publishing.com`.
+- `package.json` / `package-lock.json` `name` → `die-cast-vault`; support mailto → the project contact address.
 - `CLAUDE.md`, `AGENTS.md`, and agent-system headers/project snapshot aligned to Die Cast Vault.
 
 **Files Changed:**
@@ -301,7 +301,7 @@ ACCEPTED
 
 **Risks / Blockers:**
 - Workspace folder path remains `Collectors_Garage` (OneDrive/git rename is manual if desired).
-- `davidbeck@beck-publishing.com` must match real DNS/mailbox when you go live.
+- The project contact address must match a real DNS/mailbox when you go live.
 
 **Next Recommended Action:**
 Rename local repo folder / Firebase display name if desired; wire real support inbox and legal footer domain.
@@ -538,7 +538,7 @@ ACCEPTED WITH MINOR CONCERNS
 - No automated billing — every paying customer must be activated by hand in Firestore until Cloud Functions + Stripe webhooks are built.
 - Stripe Payment Links not yet created by the founder; `VITE_STRIPE_*` vars are commented out in `.env`, so in-app upgrade buttons show "payments unavailable" until added + redeployed.
 - Lifetime Pro for founder + Keith is pending — the two accounts must sign up first, then have `lifetimeAccess` set.
-- `UpgradeWall` references `davidbeck@beck-publishing.com`; confirm that mailbox/domain exists or change it.
+- `UpgradeWall` references the project contact address; confirm that mailbox/domain exists or change it.
 
 **Next:**
 - Founder + Keith sign up; then set `lifetimeAccess: true` on both `users/{uid}` docs.
@@ -762,7 +762,7 @@ Send a test webhook to confirm a 200, then identify the orphaned Pro subscriptio
 ## 2026-11-01 — Support email updated
 
 **Classification:** SMALL.
-**Change:** Set shared SUPPORT_EMAIL in src/lib/site.ts to davidbeck@beck-publishing.com per Beck’s latest correction. Existing UpgradeWall contact link consumes this value.
+**Change:** Set shared SUPPORT_EMAIL in src/lib/site.ts to the project contact address per Beck’s latest correction. Existing UpgradeWall contact link consumes this value.
 **Validation:** Reviewed focused diff and support-address references; git diff --check passed. Constant-only change; no runtime test added.
 **Review Verdict:** ACCEPTED. Local change only; not deployed.
 
@@ -797,7 +797,7 @@ Send a test webhook to confirm a 200, then identify the orphaned Pro subscriptio
 ## 2026-11-01 — Project contact address updated
 
 **Classification:** SMALL.
-**Changes:** Updated the shared support address and project-owned email references in current notes to davidbeck@beck-publishing.com at Beck’s request. Third-party notices and historical authorship preserved.
+**Changes:** Updated the shared support address and project-owned email references in current notes to the project contact address at Beck’s request. Third-party notices and historical authorship preserved.
 **Validation:** Reviewed shared mailto consumer and current contact references; git diff --check passed. Address is user-supplied; GitHub verification status not independently checked.
 **Review Verdict:** ACCEPTED for current contact update. Frontend publication remains pending.
 
@@ -822,6 +822,6 @@ Send a test webhook to confirm a 200, then identify the orphaned Pro subscriptio
 ## 2026-11-02 — BYOP ownership answers and eligibility resolution
 
 **Classification:** SMALL (documentation/memory only).
-**Change:** Beck confirmed personal ownership (no company, LLC or partnership), no users other than himself, and that `davidbeck.aka.db@gmail.com` plus `davidbeck@beck-publishing.com` are linked to the `built-by-Beck` GitHub account. `beck-publishing.com` is an email domain only and is not an entity claim; ownership and copyright statements remain "David Beck".
+**Change:** Beck confirmed personal ownership (no company, LLC or partnership), no users other than himself, and that both author emails are linked to the `built-by-Beck` GitHub account. The publishing-named domain is an email domain only and is not an entity claim; ownership and copyright statements remain "David Beck".
 **Effect:** Eligibility findings move to PASS on ownership, entity, employer/NDA, users and attribution. The only remaining submission blocker is repository visibility (anonymous request still returns 404). The AI feature is an ordinary application calling Gemini, not model work.
 **Unchanged:** No push, visibility change, deployment or submission. The 2026-11-01 checkout-pause work remains uncommitted in the working tree.
