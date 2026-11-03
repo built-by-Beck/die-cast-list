@@ -825,3 +825,10 @@ Send a test webhook to confirm a 200, then identify the orphaned Pro subscriptio
 **Change:** Beck confirmed personal ownership (no company, LLC or partnership), no users other than himself, and that both author emails are linked to the `built-by-Beck` GitHub account. The publishing-named domain is an email domain only and is not an entity claim; ownership and copyright statements remain "David Beck".
 **Effect:** Eligibility findings move to PASS on ownership, entity, employer/NDA, users and attribution. The only remaining submission blocker is repository visibility (anonymous request still returns 404). The AI feature is an ordinary application calling Gemini, not model work.
 **Unchanged:** No push, visibility change, deployment or submission. The 2026-11-01 checkout-pause work remains uncommitted in the working tree.
+
+## 2026-11-02 — Push pending work and harden .gitignore
+
+**Classification:** SMALL (repo hygiene; commits existing reviewed checkout-pause work).
+**Changes:** Root `.gitignore` now also ignores `.env.*` (keeping `.env.example`), `*.local`, `.runtimeconfig.json`, `.secret.local`, `*.pem`, `*.key`, `*.p12`, `*.pfx`. Committed the 2026-11-01 checkout pause (`CHECKOUT_ENABLED`) and Node 22 functions runtime. Pushed 4 earlier docs commits plus these to `origin/main`.
+**Validation:** Frontend `tsc --noEmit` and functions `tsc` pass. Pattern scan of tracked files found no credentials (only prose mentions of `whsec_`). No tracked file matches the new ignore rules. `ALIGNERR_PREPARATION.md` stays local via `.git/info/exclude`.
+**Review Verdict:** ACCEPTED. Nothing deployed: the checkout pause is still not live on Firebase Functions or Hostinger.
