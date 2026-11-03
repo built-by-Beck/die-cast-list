@@ -5,8 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Die Cast List / Die Cast Vault** — diecast car collection tracker (Hot Wheels, Matchbox, etc.).
 Collectors track inventory, work checklists, manage duplicates, keep a wanted list, and post buy/sell/trade intents.
 
-Built by **built_by_Beck**. Every commit message must contain `built_by_Beck`.
+Built by **David Beck**. Every commit message must contain `built_by_Beck`.
 Production: https://diecastlist.com — Firebase project `collectors-garage-app`.
+
+## Product direction
+
+See `README.md` and `ROADMAP.md` for the 2026-10-31 agreed collector-first direction: every annual Hot Wheels list, shared catalog entries with independent member quantities, richer private collection details, and complete image workflows. Three owned copies imply two duplicates. Exact detail fields and per-copy modeling still require design decisions. Current quantity persistence exists; all-years catalog coverage and complete image workflows are not verified. Public sharing/trading expansion is deferred. Original code uses Apache 2.0 (`LICENSE`, `NOTICE`); imported content retains its own licensing.
+
+Build only the approved task scope. Production data access and publication require authorization. Historical billing notes do not establish current usage or deployment state; verify operational facts before relying on them.
 
 ## Commands
 
@@ -90,15 +96,12 @@ environment variable" error.
 Comped access is granted by hand: set `lifetimeAccess: true` on the user doc in the Firebase console
 (see `LAUNCH.md`). There is no in-app path to grant it, on purpose.
 
-> As of 2026-08-01 the Stripe account has **no webhook endpoint registered** for this project, so
-> checkout completes but no plan is ever written back. Check `LAUNCH.md` → "Known blocker" before
-> touching or testing billing.
+> Historical operations notes record webhook registration and secret binding on 2026-08-01; a successful signed event remains unverified here. Do not repeat the earlier “no webhook registered” claim. See `LAUNCH.md`; current live state must be checked before operational work.
 
 ### AI codebase (`functions/ai`, Genkit + Gemini)
 
 Callables `suggestCarSeries`, `importChecklistFromWiki`, `importChecklistAdmin`,
-`fetchFandomChecklistHtml`, `askAI`. Secret: `GOOGLE_GENAI_API_KEY`. Node 22 here vs Node 20 in
-`functions/` — keep the engines fields as they are.
+`fetchFandomChecklistHtml`, `askAI`. Secret: `GOOGLE_GENAI_API_KEY`. Both backend packages declare Node 22. The Stripe package was upgraded after Firebase rejected Node 20 deployments on 2026-10-30.
 
 ### Frontend structure
 

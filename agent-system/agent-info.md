@@ -11,7 +11,7 @@ Shared running notebook and handoff channel for all PBRD agents.
 **Plans:** none/free (0 everything) → basic ($7: 1 list, 10 cars, 1 photo, 10 showcase, 3 checklists) → premium/"Pro" ($22: 25 lists, 5000 cars, 1 photo, 25 showcase, unlimited checklists, AI + marketplace) · `lifetimeAccess` always resolves to premium · source of truth is `PLAN_LIMITS` in `src/lib/access.ts`
 **Hosting:** diecastlist.com → Hostinger (current build); collectors-garage-app.web.app → Firebase Hosting (older build). `firebase deploy --only hosting` does NOT update the production domain.
 **High-Risk Areas:** auth, plan-gating (`src/lib/access.ts`), public visibility logic, Stripe billing, user data deletion, Firestore/Storage rules, admin role, production deployment
-**Billing (fixed 2026-08-01):** webhook endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` created, `STRIPE_WEBHOOK_SECRET` v2 stored, `functions:default` redeployed. Before this, no endpoint existed and paid checkouts never activated — one $7 customer was stranded for 12 days. A signed test event has not been sent yet; see `LAUNCH.md`.
+**Billing (fixed 2026-08-01):** webhook endpoint `<we-id>` created, `STRIPE_WEBHOOK_SECRET` v2 stored, `functions:default` redeployed. Before this, no endpoint existed and paid checkouts never activated — an affected account required manual reconciliation. A signed test event has not been sent yet; see `LAUNCH.md`.
 **Local setup gotcha:** `functions/.env` is gitignored and must exist to deploy — `PUBLIC_APP_URL`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_PRO_ID`. Also run `npm --prefix functions install` before the first deploy from a fresh clone.
 **Build Commands:** `npm run dev` · `npm run build` (tsc && vite build) · `npm run typecheck`/`lint` · `npm run format` · `npm run deploy:functions` · no test framework
 
@@ -284,7 +284,7 @@ Rename the product from Collectors Garage / Collector's Garage to Die Cast Vault
 **Summary:**
 - Updated `index.html` document title, landing/login/sidebar copy, inventory/loading strings, add-car success and CTA labels, protected-route loading text.
 - Replaced product-scoped "garage" phrasing with vault/collection wording where it referred to the app metaphor (not Hot Wheels series names like HW Dream Garage).
-- `package.json` / `package-lock.json` `name` → `die-cast-vault`; support mailto → `support@diecastvault.app`.
+- `package.json` / `package-lock.json` `name` → `die-cast-vault`; support mailto → `davidbeck@beck-publishing.com`.
 - `CLAUDE.md`, `AGENTS.md`, and agent-system headers/project snapshot aligned to Die Cast Vault.
 
 **Files Changed:**
@@ -301,7 +301,7 @@ ACCEPTED
 
 **Risks / Blockers:**
 - Workspace folder path remains `Collectors_Garage` (OneDrive/git rename is manual if desired).
-- `support@diecastvault.app` must match real DNS/mailbox when you go live.
+- `davidbeck@beck-publishing.com` must match real DNS/mailbox when you go live.
 
 **Next Recommended Action:**
 Rename local repo folder / Firebase display name if desired; wire real support inbox and legal footer domain.
@@ -538,7 +538,7 @@ ACCEPTED WITH MINOR CONCERNS
 - No automated billing — every paying customer must be activated by hand in Firestore until Cloud Functions + Stripe webhooks are built.
 - Stripe Payment Links not yet created by the founder; `VITE_STRIPE_*` vars are commented out in `.env`, so in-app upgrade buttons show "payments unavailable" until added + redeployed.
 - Lifetime Pro for founder + Keith is pending — the two accounts must sign up first, then have `lifetimeAccess` set.
-- `UpgradeWall` references `support@diecastvault.app`; confirm that mailbox/domain exists or change it.
+- `UpgradeWall` references `davidbeck@beck-publishing.com`; confirm that mailbox/domain exists or change it.
 
 **Next:**
 - Founder + Keith sign up; then set `lifetimeAccess: true` on both `users/{uid}` docs.
@@ -691,7 +691,7 @@ Decide whether to push the preserved local launch commit or drop it if origin/ma
 
 ---
 
-## 2026-08-01 - Doc audit vs live systems + paying customer not activated
+## 2026-08-01 - Doc audit and billing activation incident
 
 **Classification:** LARGE (billing + production data)
 **Task:** `/init` doc rebuild, which surfaced a live billing failure.
@@ -700,9 +700,9 @@ Decide whether to push the preserved local launch commit or drop it if origin/ma
 - Rewrote `CLAUDE.md`, `AGENTS.md`, `LAUNCH.md`, `README.md`, plus the `agent-info.md` snapshot header, `lessons_learned.md`, and `plan.md`. Prior docs claimed "Cloud Functions not yet implemented" and "Stripe pending" while 7 functions were deployed and Checkout was live; every plan-limit number was wrong; the data model was described as `usr/{uid}` when the UserDoc lives at `users/{uid}`.
 - Verified live state instead of trusting docs: `firebase functions:list`, HTTP headers on both domains, Stripe API, Firestore REST reads.
 - **diecastlist.com is served by Hostinger**, not Firebase Hosting (`platform: hostinger`). `collectors-garage-app.web.app` runs an older build. `public/.htaccess` is live config for the Hostinger deploy.
-- **Found a real customer paying for nothing:** uid `RCm8f66gwLXmDaerkDVVDWQnJbm2` completed Checkout on 2026-07-20 ($7 Basic, `sub_1TvIKdAzoOtBRx5S1Ssdu4Li`, active), but their user doc still read `plan: "none"` with `updateTime == createTime` — nothing had ever written to it. Root cause: no Stripe webhook endpoint existed for this project, so `stripeWebhook` never ran.
+- **Found a billing activation failure:** a completed Checkout did not update the account plan. Root cause: no Stripe webhook endpoint existed for this project, so `stripeWebhook` never ran. Account-specific identifiers and transaction details are omitted.
 - **Fixed:** manually set `plan: basic`, `subscriptionStatus: active`, `stripeCustomerId`, `stripeSubscriptionId` on that doc via Firestore REST (owner credentials bypass rules). Customer now resolves to Basic.
-- **Fixed:** created Stripe webhook endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` → `https://us-central1-collectors-garage-app.cloudfunctions.net/stripeWebhook`, subscribed to checkout.session.completed, customer.subscription.{created,updated,deleted}, invoice.payment_failed.
+- **Fixed:** created Stripe webhook endpoint `<we-id>` → `https://us-central1-collectors-garage-app.cloudfunctions.net/stripeWebhook`, subscribed to checkout.session.completed, customer.subscription.{created,updated,deleted}, invoice.payment_failed.
 
 **Files Changed:**
 - CLAUDE.md, AGENTS.md, LAUNCH.md, README.md (rewritten/updated)
@@ -713,12 +713,12 @@ Decide whether to push the preserved local launch commit or drop it if origin/ma
 **Review Verdict:** ACCEPTED WITH MINOR CONCERNS — the webhook cannot verify signatures yet.
 
 **Risks / Blockers:**
-- `STRIPE_WEBHOOK_SECRET` in Secret Manager has one version dated 2026-06-16, which predates the new endpoint. Until the real `whsec_` from `we_1TzoZJ...` is stored and functions are redeployed, every delivery fails signature verification — and Stripe disables endpoints that keep failing.
-- A second active subscription ($22 Pro, `sub_1Tf4PsAzoOtBRx5SSnKdmifX`, customer `cus_UeN3OA5TC31bXj`, since 2026-06-04) is linked to no Firebase account. Customer email is redacted through MCP; identify it in the Stripe Dashboard.
+- `STRIPE_WEBHOOK_SECRET` in Secret Manager has one version dated 2026-06-16, which predates the new endpoint. Until the real `whsec_` from `<we-id>` is stored and functions are redeployed, every delivery fails signature verification — and Stripe disables endpoints that keep failing.
+- A historical subscription required ownership reconciliation in the authorized billing system. Account-specific identifiers and payment details are omitted.
 - Two hosting front doors continue to drift.
 
 **Next Recommended Action:**
-Reveal the signing secret for `we_1TzoZJ...` in the Stripe Dashboard, run `firebase functions:secrets:set STRIPE_WEBHOOK_SECRET`, redeploy `functions:default`, then test a live checkout end to end.
+Reveal the signing secret for `<we-id>` in the Stripe Dashboard, run `firebase functions:secrets:set STRIPE_WEBHOOK_SECRET`, redeploy `functions:default`, then test a live checkout end to end.
 
 ---
 
@@ -728,9 +728,9 @@ Reveal the signing secret for `we_1TzoZJ...` in the Stripe Dashboard, run `fireb
 **Task:** Follow-up to the doc audit — actually fix the broken webhook path.
 
 **Summary:**
-- Created Stripe webhook endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` (livemode, enabled) for `stripeWebhook`.
+- Created Stripe webhook endpoint `<we-id>` (livemode, enabled) for `stripeWebhook`.
 - Stored the endpoint signing secret as `STRIPE_WEBHOOK_SECRET` version 2 via `firebase functions:secrets:set --data-file -`.
-- First deploy attempt failed twice, both environment issues, not code: (1) `functions/node_modules` was missing → `tsc` could not resolve `firebase-functions`/`stripe`; fixed with `npm --prefix functions install`. (2) `functions/.env` did not exist locally → deploy aborted on missing `PUBLIC_APP_URL`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_PRO_ID`. Recreated it from verified values: price IDs from the live Stripe products, `PUBLIC_APP_URL=https://diecastlist.com` confirmed by the `success_url` recorded on the real 2026-07-20 checkout session.
+- First deploy attempt failed twice, both environment issues, not code: (1) `functions/node_modules` was missing → `tsc` could not resolve `firebase-functions`/`stripe`; fixed with `npm --prefix functions install`. (2) `functions/.env` did not exist locally → deploy aborted on missing `PUBLIC_APP_URL`, `STRIPE_PRICE_BASIC_ID`, `STRIPE_PRICE_PRO_ID`. Recreated it from verified values: price IDs from the live Stripe products, `PUBLIC_APP_URL=https://diecastlist.com` confirmed from the checkout return configuration.
 - Redeployed `functions:default`. Audit log confirms both functions now bind secret version 2; `stripeWebhook` revision `stripewebhook-00002-taq`, state ACTIVE.
 - Verified routing: unsigned POST to the registered cloudfunctions.net URL returns `400 Missing stripe-signature header`, so the URL reaches the deployed handler's signature check.
 
@@ -745,7 +745,76 @@ Reveal the signing secret for `we_1TzoZJ...` in the Stripe Dashboard, run `fireb
 **Risks / Blockers:**
 - No *signed* event has been observed succeeding yet. Send a test webhook from the Dashboard, or wait for the next paid signup.
 - Node.js 20 runtime is deprecated and decommissions 2026-10-30 — `functions/` must move to Node 22 before then. `functions/ai/` is already on 22.
-- The unlinked $22 Pro subscription (`sub_1Tf4PsAzoOtBRx5SSnKdmifX`) is still unidentified.
+- Historical subscription ownership still required verification in the authorized billing system.
 
 **Next Recommended Action:**
 Send a test webhook to confirm a 200, then identify the orphaned Pro subscription.
+
+
+## 2026-10-31 — Project documentation and licensing
+
+**Classification:** MEDIUM (documentation).
+**Changes:** Updated current author credits to David Beck, added the Apache 2.0 license and NOTICE with Beck’s approval, refreshed README and operational caveats, and documented the approved collector-first roadmap. Roadmap covers annual Hot Wheels catalogs, independent member quantity tracking, richer details and images; exact detail modeling remains a design decision.
+**Validation:** License compared with official text; documentation links, estimate arithmetic and whitespace checked. No catalog import or production deployment performed.
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS — live state and end-to-end behavior remain unverified.
+
+
+## 2026-11-01 — Support email updated
+
+**Classification:** SMALL.
+**Change:** Set shared SUPPORT_EMAIL in src/lib/site.ts to davidbeck@beck-publishing.com per Beck’s latest correction. Existing UpgradeWall contact link consumes this value.
+**Validation:** Reviewed focused diff and support-address references; git diff --check passed. Constant-only change; no runtime test added.
+**Review Verdict:** ACCEPTED. Local change only; not deployed.
+
+
+## 2026-11-01 — Pause new paid signup checkout
+
+**Classification:** LARGE (billing).
+**Authorized scope:** Beck requested stopping payments for paid signup while the app is unfinished.
+**Build:** Added default-false CHECKOUT_ENABLED backend parameter; authenticated createCheckoutSession rejects before configuration, Firestore or Stripe access. Shared frontend guard blocks checkout; landing/upgrade/settings purchase buttons disabled with pause notices; old plan URLs/pending selections no longer initiate checkout after authentication. Free signup and webhook handling retained. README/LAUNCH describe local/deployed distinction and open-session/subscription limitation.
+**Validation:** Frontend production build and Stripe backend build passed. Focused mocked execution of actual frontend/backend modules rejects Basic/Pro with zero Stripe/database/secret/callable access and preserves unauthenticated rejection. AI build fails from missing genkit dependencies (untouched package). npm ci revealed pre-existing frontend manifest/lock mismatch; validated via npm install --package-lock=false, leaving lockfiles unchanged. git diff --check passed.
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS — live deployment status pending; existing subscriptions and open Checkout sessions are not canceled by this guard. Node 20 declaration may block backend deployment. Frontend dist prepared, not uploaded to Hostinger.
+
+**Deployment result:** Targeted firebase deploy --only functions:default:createCheckoutSession failed during authentication: “Failed to authenticate, have you run firebase login?” No successful deployment reported. Live pause remains BLOCKED pending Firebase authentication; frontend dist still requires hosting upload.
+
+
+## 2026-11-01 — Project documentation cleanup
+
+**Classification:** MEDIUM (documentation only).
+**Changes:** Kept public documentation focused on product purpose, technical status and remaining engineering work; removed external hour-target comparisons and administrative application text. Original administrative notes and instructions retained privately outside checkout. Feature scope, estimates and operational limitations preserved; no Git history changed.
+**Validation:** Documentation keyword search, roadmap arithmetic, local links and git diff --check.
+**Review Verdict:** ACCEPTED.
+
+
+## 2026-11-01 — Remove account-specific documentation details
+
+**Classification:** SMALL (two documentation files).
+**Changes:** Removed concrete customer, subscription, webhook and price identifiers, Firebase user identifiers and individual transaction details from LAUNCH.md and this log. Preserved generic incident facts, operational instructions, author/copyright attribution and the approved support contact. No live records or Git history changed.
+**Validation:** Current tracked text scan for Stripe identifier patterns and Firebase UID-shaped tokens; remaining matches were reviewed as dependency metadata and code/config identifiers, not account IDs. git diff --check. This is documentation sanitization, not a complete personal-data audit or history cleanup.
+**Review Verdict:** ACCEPTED for current-file cleanup. Older commits may retain removed details.
+
+
+## 2026-11-01 — Project contact address updated
+
+**Classification:** SMALL.
+**Changes:** Updated the shared support address and project-owned email references in current notes to davidbeck@beck-publishing.com at Beck’s request. Third-party notices and historical authorship preserved.
+**Validation:** Reviewed shared mailto consumer and current contact references; git diff --check passed. Address is user-supplied; GitHub verification status not independently checked.
+**Review Verdict:** ACCEPTED for current contact update. Frontend publication remains pending.
+
+**Follow-up:** Repository-local Git email set to the same user-supplied address for future commits. Historical authorship unchanged. Current-file and locally reachable history review completed; detailed findings retained privately outside checkout.
+
+
+## 2026-11-01 — Checkout pause deployment retry
+
+**Classification:** LARGE (billing/deployment).
+**Scope:** Retry the previously authorized targeted createCheckoutSession pause after Firebase login. Authentication succeeded. Firebase rejected Node 20 as decommissioned; updated functions/package.json and its lockfile root engine to Node 22 and synchronized current runtime references in README, AGENTS and CLAUDE. No dependency versions changed. Targeted deployment excludes webhook and AI functions.
+**Validation:** Stripe package build and focused frontend/backend checkout guard checks passed; git diff --check passed. Default 10-second function discovery timed out; retry with FUNCTIONS_DISCOVERY_TIMEOUT=120 completed discovery.
+**Deployment result:** BLOCKED before function update: Secret Manager returned HTTP 403 because billing is disabled for the Firebase project. No live checkout pause confirmed. Local runtime update is not evidence of a deployed runtime change. Frontend dist still requires actual-host publication.
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS for local changes; deployment blocked externally. Restore project billing before retrying targeted deployment. Existing subscriptions/open Checkout sessions are not canceled.
+
+## 2026-11-02 — Alignerr BYOP submission preparation
+
+**Classification:** MEDIUM (documentation, manifests and lockfiles; no auth, billing, plan-gating or rules logic changed).
+**Scope:** Prepared the repository for Alignerr BYOP project review. Verified a clean dependency install and both frontend/backend builds; repaired lockfiles that did not match their manifests so the documented `npm ci` commands work from a fresh clone; removed the unused `firebase-functions-test` dev dependency that made `functions/ai` unresolvable; refreshed README check evidence. Apache 2.0 LICENSE, NOTICE and ROADMAP.md (64–112 hours) were completed in the prior session and are now tracked. Private Alignerr submission drafts and the readiness report are kept outside the repository.
+**Validation:** `npm ci`, `npm run typecheck` and `npm run build` pass on Node 24. `npm --prefix functions run build` and (`npm --prefix functions/ai ci` + build) pass. Root and AI lockfiles are in sync (`npm ci --dry-run` clean). Pattern-based secret scan of the tracked tree and all reachable history returned no credential findings; this is not a substitute for a full secret scanner. Anonymous request to the GitHub repository still returns 404 — the repo remains private.
+**Review Verdict:** ACCEPTED WITH MINOR CONCERNS for local preparation. Submission remains BLOCKED externally: the repository must be made public by Beck, and eligibility needs Alignerr clarification because the live app processes member accounts, email addresses, photos and Stripe billing identifiers. Entity ownership and commit-email linkage still need Beck's confirmation. No push, visibility change, deployment or submission was performed.

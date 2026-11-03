@@ -2,16 +2,20 @@
 
 **Diecast car collection tracker for Hot Wheels, Matchbox, and similar brand collectors.**
 
-Built by **built_by_Beck**. All commits must include `built_by_Beck` in the commit message.
+Built by **David Beck**. All commits must include `built_by_Beck` in the commit message.
 
 `CLAUDE.md` is the detailed architecture reference — read it first. This file is the short
 process contract that applies to every agent working in this repo.
+
+## Product Direction
+
+`README.md` describes current capabilities; `ROADMAP.md` records approved remaining work. Prioritize every-year Hot Wheels checklist coverage, independent per-member quantities/details, and images. Catalog duplicate detection is distinct from a member owning multiple copies. Public showcase and marketplace expansion are deferred. Apache 2.0 covers original project code; preserve separate source-content licenses. Build only the approved task scope; production publication requires authorization.
 
 ## Tech Stack
 
 - React 18 + TypeScript + Vite + Tailwind CSS + React Router (v7 package, v6-style APIs)
 - Firebase Auth + Firestore + Storage (client SDK)
-- Cloud Functions — **two deployed codebases**: `functions/` (Stripe, Node 20) and
+- Cloud Functions — **two deployed codebases**: `functions/` (Stripe, Node 22) and
   `functions/ai/` (Genkit + Gemini, Node 22), both in `us-central1`
 - Stripe billing — **live**: Checkout via callable `createCheckoutSession`, state synced by `stripeWebhook`
 - Hosting — Firebase project `collectors-garage-app`; the `diecastlist.com` domain is currently

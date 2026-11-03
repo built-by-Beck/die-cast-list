@@ -1,15 +1,21 @@
-# Die Cast Vault — Launch & Operations Guide
+# Die Cast List — Launch & Operations Guide
 
 **Production site:** https://diecastlist.com — currently served by **Hostinger**
 **Firebase Hosting URL:** https://collectors-garage-app.web.app — serves an **older build**
 **Firebase project:** `collectors-garage-app` (display name: Die-Cast-Vault)
 **Console:** https://console.firebase.google.com/project/collectors-garage-app
 
-Last verified against live systems: **2026-08-01**.
+Historical live-system verification recorded: **2026-08-01**. Not reverified on 2026-10-31.
+
+## Development priorities (2026-10-31)
+
+The collector-first goal and approved remaining work are documented in [README.md](README.md) and [ROADMAP.md](ROADMAP.md): shared annual Hot Wheels lists covering every year, private per-member quantities/details, reliable images and regression coverage. The annual catalog import and remaining workflows are planned work. Public showcasing and marketplace expansion are deferred.
+
+Do not use the historical tables below as a current operational check. Current user counts, subscription state and hosting/runtime status are NOT VERIFIED. Verify live state before operational changes. Preserve authentic history and avoid sharing account identifiers unnecessarily.
 
 ---
 
-## What is live
+## Historical deployment record (2026-08-01)
 
 | Piece | Status |
 |-------|--------|
@@ -31,12 +37,11 @@ marketplace, and AI are paid features.
 ## The billing outage of 2026-06 → 2026-08 (fixed)
 
 Checkout always worked; the **return path** was missing. Until 2026-08-01 no webhook endpoint pointed
-at this project's `stripeWebhook` function, so payments never became plans. A real customer paid $7
-on 2026-07-20 and sat on the free tier for twelve days before this was caught.
+at this project's `stripeWebhook` function, so payments never became plans. Historical notes record a paid account that did not receive its plan until the synchronization failure was corrected.
 
 **What was done on 2026-08-01:**
 
-1. Created endpoint `we_1TzoZJAzoOtBRx5Sw3CunVUr` →
+1. Created endpoint `<we-id>` →
    `https://us-central1-collectors-garage-app.cloudfunctions.net/stripeWebhook`, subscribed to
    `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.payment_failed`.
 2. Stored the endpoint's signing secret as `STRIPE_WEBHOOK_SECRET` version 2.
@@ -53,15 +58,9 @@ If deliveries ever start failing again, check that the secret version bound to t
 matches the endpoint — `firebase functions:log --only stripeWebhook` shows
 "Webhook signature verification failed" when it does not.
 
-### Accounts fixed by hand
+### Historical account remediation
 
-| Date | uid | What happened |
-|------|-----|----------------|
-| 2026-08-01 | `RCm8f66gwLXmDaerkDVVDWQnJbm2` | Paid $7 Basic on 2026-07-20 (`sub_1TvIKdAzoOtBRx5S1Ssdu4Li`), never activated. `plan`, `subscriptionStatus`, `stripeCustomerId`, `stripeSubscriptionId` set manually. Consider a refund or comp month for the lost time. |
-
-**Not a customer:** the $22 Pro subscription `sub_1Tf4PsAzoOtBRx5SSnKdmifX` (customer
-`cus_UeN3OA5TC31bXj`, since 2026-06-04) was the owner's own live-mode test. Deliberately left
-unlinked to any account, and cancelled. Nothing to reconcile.
+An affected account was manually reconciled during the incident. Individual account IDs, subscription records and payment details are omitted from this guide. Use authorized operational systems for account-specific troubleshooting.
 
 > **Test in test mode, not live mode.** Live-mode test purchases cost ~$0.94 in Stripe fees per
 > cycle and clutter real revenue reporting. Use test-mode keys and card `4242 4242 4242 4242`
@@ -87,8 +86,8 @@ Live prices (Stripe, live mode):
 
 | Plan | Product | Price ID | Amount |
 |------|---------|----------|--------|
-| Basic | Die Cast Vault Basic | `price_1TUfLCAzoOtBRx5S8VwXuRF5` | $7.00 / month |
-| Pro (`premium`) | Die Cast Vault Pro | `price_1TUfQ4AzoOtBRx5Sgpi5sqd2` | $22.00 / month |
+| Basic | Die Cast Vault Basic | `<price-id>` | $7.00 / month |
+| Pro (`premium`) | Die Cast Vault Pro | `<price-id>` | $22.00 / month |
 
 These must match the `STRIPE_PRICE_BASIC_ID` / `STRIPE_PRICE_PRO_ID` function params, or the webhook
 maps the subscription to `none` and the customer gets nothing.
@@ -122,7 +121,7 @@ skips users with this flag, so a comped account can never be downgraded by a Str
 
 ---
 
-## Manual activation fallback (until the webhook is registered)
+## Historical manual activation fallback (incident response only)
 
 1. You see the payment in the Stripe Dashboard (with the buyer's email).
 2. In **Firestore → `users`**, find that buyer's document (match on `email`) and set **both**:
@@ -132,7 +131,7 @@ skips users with this flag, so a comped account can never be downgraded by a Str
    > to decide whether the plan is active.
 3. To cancel/revoke later: set `subscriptionStatus` to `canceled`.
 
-Once the webhook is registered it becomes the source of truth and will overwrite manual edits on the
+The webhook is the source of truth and, when processing events, will overwrite manual edits on the
 next subscription event — which is what you want. Prefer `lifetimeAccess` for permanent comps.
 
 ---
@@ -162,11 +161,17 @@ have.
 
 ## What still needs you
 
-- [ ] **Register the Stripe webhook endpoint** and set `STRIPE_WEBHOOK_SECRET` (see Known blocker).
+- [ ] Reverify the previously recorded webhook registration and confirm a signed event in an isolated/test-mode workflow; registration was recorded as completed on 2026-08-01.
 - [ ] Decide on one hosting front door for diecastlist.com; redeploy whichever host is stale.
 - [ ] Sign up your account + Keith's at the live site, then grant `lifetimeAccess`.
 - [ ] Build out the public profile / showcase pages — the routes exist but render "not found" stubs,
       and `firestore.rules` has no public-read rule for profile data yet.
 
 ---
-Built by **built_by_Beck**.
+Built by **David Beck**.
+
+## New paid memberships paused (local change, 2026-11-01)
+
+New checkout is disabled in the frontend. The Stripe callable now rejects new sessions unless its CHECKOUT_ENABLED parameter is explicitly true (default false). Deploy the backend with CHECKOUT_ENABLED=false and ship the frontend to make the pause live; local edits alone do not stop the deployed site. Free signup remains available. Existing subscriptions and previously created Checkout sessions are not canceled by this change; review those separately in Stripe if all future charges must stop. Keep webhook processing enabled. Reopening requires deliberate backend and frontend changes.
+
+Deployment retry (2026-11-01): Firebase authentication succeeded, but the project has billing disabled. Secret Manager returned HTTP 403 and the function update did not deploy. The local Stripe runtime declaration is now Node 22 because Firebase rejected Node 20 deployments. Restore project billing before retrying; no live checkout pause is confirmed.
