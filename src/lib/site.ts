@@ -4,4 +4,4 @@ export const SITE_URL =
   "https://diecastlist.com";
 
 export const SITE_NAME = "Die Cast List";
-export const SUPPORT_EMAIL = "support@diecastlist.com";
+export const SUPPORT_EMAIL = "davidbeck@beck-publishing.com";

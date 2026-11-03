@@ -14,6 +14,7 @@ import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import Button from '../../components/ui/Button';
 import {
+  CHECKOUT_ENABLED,
   checkoutPlanLabel,
   formatCheckoutError,
   parseCheckoutPlan,
@@ -96,12 +97,12 @@ export default function LoginPage() {
       setMode('register');
     }
     const plan = parseCheckoutPlan(searchParams.get('plan'));
-    if (plan) setSelectedPlan(plan);
+    if (CHECKOUT_ENABLED && plan) setSelectedPlan(plan);
   }, [searchParams]);
 
   const completeAuthFlow = async () => {
     const plan = selectedPlan ?? takePendingCheckoutPlan();
-    if (plan) {
+    if (CHECKOUT_ENABLED && plan) {
       try {
         await startStripeCheckout(plan);
         return;

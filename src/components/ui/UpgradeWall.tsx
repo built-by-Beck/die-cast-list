@@ -3,7 +3,7 @@ import PlanImageCard from './PlanImageCard';
 import basicPlanImage from '../../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../../media/die-cast-vault-pro.png';
 import { SUPPORT_EMAIL } from '../../lib/site';
-import { formatCheckoutError, startStripeCheckout } from '../../lib/billing';
+import { CHECKOUT_ENABLED, CHECKOUT_PAUSED_MESSAGE, formatCheckoutError, startStripeCheckout } from '../../lib/billing';
 import { firebaseApp } from '../../lib/firebase';
 
 interface UpgradeWallProps {
@@ -16,7 +16,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<'basic' | 'premium' | null>(null);
 
-  const canCheckout = Boolean(firebaseApp);
+  const canCheckout = CHECKOUT_ENABLED && Boolean(firebaseApp);
 
   const runCheckout = async (plan: 'basic' | 'premium') => {
     setError(null);
@@ -44,7 +44,7 @@ export default function UpgradeWall({ feature, requiredPlan, description }: Upgr
 
       {!canCheckout && (
         <p className="text-stone-600 text-sm mb-6">
-          (Billing unavailable — Firebase is not configured in this environment)
+          {!CHECKOUT_ENABLED ? CHECKOUT_PAUSED_MESSAGE : 'Billing is currently unavailable.'}
         </p>
       )}
 

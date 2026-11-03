@@ -5,7 +5,7 @@ import Button from '../components/ui/Button';
 import PlanImageCard from '../components/ui/PlanImageCard';
 import basicPlanImage from '../../media/die-cast-vault-basic.png';
 import proPlanImage from '../../media/die-cast-vault-pro.png';
-import { formatCheckoutError, startStripeCheckout } from '../lib/billing';
+import { CHECKOUT_ENABLED, CHECKOUT_PAUSED_MESSAGE, formatCheckoutError, startStripeCheckout } from '../lib/billing';
 import { firebaseApp } from '../lib/firebase';
 
 export default function SettingsPage() {
@@ -20,7 +20,7 @@ export default function SettingsPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<'basic' | 'premium' | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
-  const canCheckout = Boolean(firebaseApp);
+  const canCheckout = CHECKOUT_ENABLED && Boolean(firebaseApp);
 
   const handleCheckout = async (plan: 'basic' | 'premium') => {
     setCheckoutError(null);
@@ -80,6 +80,10 @@ export default function SettingsPage() {
           )}
         </div>
       </section>
+
+      {!CHECKOUT_ENABLED && (
+        <p className="text-amber-300 mb-5" role="status">{CHECKOUT_PAUSED_MESSAGE}</p>
+      )}
 
       {/* Plan limits */}
       <section className="bg-stone-800 border border-stone-700 rounded-2xl p-6 mb-5">

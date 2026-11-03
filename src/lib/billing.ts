@@ -2,6 +2,10 @@ import { FirebaseError } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from './firebase';
 
+export const CHECKOUT_ENABLED = false;
+export const CHECKOUT_PAUSED_MESSAGE =
+  'Paid memberships are temporarily paused. Free signup is still available.';
+
 export type CheckoutPlan = 'basic' | 'premium';
 
 const DEFAULT_FUNCTIONS_REGION = 'us-central1';
@@ -33,6 +37,9 @@ export function checkoutPlanLabel(plan: CheckoutPlan): string {
  * Redirects the browser to Stripe on success.
  */
 export async function startStripeCheckout(plan: CheckoutPlan): Promise<void> {
+  if (!CHECKOUT_ENABLED) {
+    throw new Error(CHECKOUT_PAUSED_MESSAGE);
+  }
   if (!firebaseApp) {
     throw new Error('Firebase is not configured.');
   }
@@ -61,7 +68,7 @@ export async function startStripeCheckout(plan: CheckoutPlan): Promise<void> {
 export function formatCheckoutError(error: unknown): string {
   if (error instanceof FirebaseError) {
     if (error.code === 'functions/failed-precondition') {
-      return 'Billing is not configured yet. Deploy Cloud Functions and set Stripe pricing in the Firebase project.';
+      return CHECKOUT_ENABLED ? 'Paid checkout is currently unavailable. Please contact support.' : CHECKOUT_PAUSED_MESSAGE;
     }
     if (error.code === 'functions/unauthenticated') {
       return 'Sign in to continue to checkout.';

@@ -1,3 +1,4 @@
+import { CHECKOUT_ENABLED, CHECKOUT_PAUSED_MESSAGE } from '../lib/billing';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import basicPlanImage from '../../media/die-cast-vault-basic.png';
@@ -138,7 +139,7 @@ export default function LandingPage() {
       <section className="px-6 py-16 max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold text-stone-50 text-center mb-3">Simple, honest pricing</h2>
         <p className="text-stone-400 text-center mb-12">
-          Start free with checklists. Upgrade when you're ready for the full vault.
+          {CHECKOUT_ENABLED ? "Start free with checklists. Upgrade when you're ready for the full vault." : CHECKOUT_PAUSED_MESSAGE}
         </p>
 
         <div className="grid sm:grid-cols-3 gap-6">
@@ -178,7 +179,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth onClick={() => navigate('/login?mode=register&plan=basic')}>
+            <Button className="mt-8" fullWidth disabled={!CHECKOUT_ENABLED} onClick={() => navigate('/login?mode=register&plan=basic')}>
               Get Basic
             </Button>
           </div>
@@ -205,7 +206,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Button className="mt-8" fullWidth onClick={() => navigate('/login?mode=register&plan=premium')}>
+            <Button className="mt-8" fullWidth disabled={!CHECKOUT_ENABLED} onClick={() => navigate('/login?mode=register&plan=premium')}>
               Get Pro
             </Button>
           </div>

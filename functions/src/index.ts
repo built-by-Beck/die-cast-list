@@ -2,7 +2,7 @@ import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
-import { defineSecret, defineString } from "firebase-functions/params";
+import { defineSecret, defineString, defineBoolean } from "firebase-functions/params";
 import Stripe from "stripe";
 
 initializeApp();
@@ -23,6 +23,8 @@ const priceBasicId = defineString("STRIPE_PRICE_BASIC_ID", {
 const priceProId = defineString("STRIPE_PRICE_PRO_ID", {
   description: "Stripe recurring Price ID for Pro",
 });
+
+const checkoutEnabled = defineBoolean("CHECKOUT_ENABLED", { default: false });
 
 const functionsRegion = "us-central1";
 
@@ -144,6 +146,13 @@ export const createCheckoutSession = onCall(
       throw new HttpsError(
         "unauthenticated",
         "You must be signed in to start checkout.",
+      );
+    }
+
+    if (!checkoutEnabled.value()) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Paid memberships are temporarily paused. Free signup is still available.",
       );
     }
 
